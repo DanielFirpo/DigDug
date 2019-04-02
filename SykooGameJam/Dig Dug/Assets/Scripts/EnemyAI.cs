@@ -30,11 +30,20 @@ public class EnemyAI : MonoBehaviour {
     private float fleeSpeedMultiplier;
 
     private Vector2 travelTarget;//The target we must reach before finding another (Easiest way to restrict movement to gridlines, shouldn't cut corners either if PlayerController digFreq. is high enough)
+
+    private Vector2 TravelTarget {
+        get { return travelTarget; }
+        set { travelTarget = value; progressingTowardsTarget = true;  }
+    }
+
     private bool progressingTowardsTarget = false;
+
+    private float idleTime;//How long we've been idling, need this cause we don't want to ghost too soon, we want to idle for a bit before ghosting
 
     private float lastDirectionDistance;//The distance between the last walkable position and the travelDirection, used to determine when to change directions
 
     private LevelManager levelManager;
+    private PlayerController playerController;
 
     //Need this cause if we didn't move since we last changed direction, we're going to think we're not making progress so change directions again (causing a loop of direction changes and never moving anywhere)
     //private bool hasMovedSinceLastDirectionChange = true;
@@ -42,7 +51,10 @@ public class EnemyAI : MonoBehaviour {
     // Use this for initialization
     void Start () {
 
+        idleTime = Time.time;
+
         levelManager = FindObjectOfType<LevelManager>();
+        playerController = FindObjectOfType<PlayerController>();
 
     }//TODO: 1. Not new random, new direction with walkable positions. DONE 2. Don't let player dig already dug positions. DONE 3. Restrict enemy movement along gridlines.
 
@@ -61,8 +73,6 @@ public class EnemyAI : MonoBehaviour {
 
                 if (!progressingTowardsTarget) {//If we're not already moving towards a target, lets find a new one.
 
-                    progressingTowardsTarget = true;
-
                     foreach (Vector2 pos in walkablePositions) {
                         if (DistanceToDirection(pos, travelDirection) < DistanceToDirection(bestPostion, travelDirection)) {//found new best walkable position, which is closest to the direction we want to be traveling in
                             bestPostion = pos;
@@ -70,6 +80,16 @@ public class EnemyAI : MonoBehaviour {
                     }
 
                     if (Vector2.Distance(bestPostion, travelDirection) > lastDirectionDistance) {//We're starting to have to move farther away from our desired direction, lets travel a different direction so we don't get stuck in a loop walking farther and closer over and over
+
+                        if (Time.time - idleTime > 10) {//if we've been idling for more than 10 seconds
+                            int rand = Random.Range(1, 5);//25% chance to ghost upon hitting a wall
+                            if (rand == 1) {
+                                Debug.Log(rand + " == 1, GHOSTING");
+                                TravelTarget = new Vector2(playerController.transform.position.x, playerController.transform.position.y);
+                                currentGoal = Goal.Ghost;
+                                return;
+                            }
+                        }
 
                         lastDirectionDistance = 0;//We need to clear this value because we're now working with a new direction, which we could be farther away from, and we'll try to go back if so
 
@@ -79,7 +99,7 @@ public class EnemyAI : MonoBehaviour {
 
                     lastDirectionDistance = Vector2.Distance(bestPostion, travelDirection);
 
-                    travelTarget = bestPostion;
+                    TravelTarget = bestPostion;
 
                 }
 
@@ -90,14 +110,19 @@ public class EnemyAI : MonoBehaviour {
                 return;
             }
 
-            MoveTowards(travelTarget);
-
-            if (Vector2.Distance(transform.position, travelTarget) < .05f) {//if we've reached our travelTarget
-                progressingTowardsTarget = false;
-            }
+            MoveTowardsTarget();
 
         }
         else if (currentGoal == Goal.Ghost) {
+
+            MoveTowardsTarget();
+            Debug.Log("Moving towards travelTarget: " + TravelTarget);
+
+            if (!progressingTowardsTarget) {
+                Debug.Log("WE MADE IT! EXPERT GHOSTERS. Now lets chase.");
+                currentGoal = Goal.Chase;
+                return;
+            }
 
         }
         else if (currentGoal == Goal.Chase) {
@@ -114,7 +139,14 @@ public class EnemyAI : MonoBehaviour {
         }
 	}
 
-    private float DistanceToDirection(Vector2 pos, Vector2 direction) {
+    private bool HasReachedTarget() {
+        if (Vector2.Distance(transform.position, TravelTarget) < .05f) {//if we've reached our travelTarget
+            return true;
+        }
+        return false;
+    }
+
+    private float DistanceToDirection(Vector2 pos, Vector2 direction) {//Gets the distance from pos to direction without knowing which direction direction is
 
         if (direction == up || direction == down) {
             return Distance(pos.y, direction.y);
@@ -144,7 +176,7 @@ public class EnemyAI : MonoBehaviour {
                     possibleDirections.Add(right);
                 }
 
-                int randIndex = Random.Range(0, possibleDirections.Count - 1);
+                int randIndex = Random.Range(0, possibleDirections.Count);
                 Debug.Log("RAND INDEX: " + randIndex);
                 if (possibleDirections.Count >= 1) {
                     return possibleDirections[randIndex];//choose one direction randomly to avoid AI behaviour loop
@@ -156,9 +188,14 @@ public class EnemyAI : MonoBehaviour {
         return up;
     }
 
-    private void MoveTowards(Vector2 pos) {
+    private void MoveTowardsTarget() {
 
-        this.transform.position = Vector3.MoveTowards(transform.position, new Vector3(pos.x, pos.y, transform.position.z), speed*Time.deltaTime);
+        this.transform.position = Vector3.MoveTowards(transform.position, new Vector3(TravelTarget.x, TravelTarget.y, transform.position.z), speed*Time.deltaTime);
+
+        if (HasReachedTarget() == true) {
+            progressingTowardsTarget = false;
+        }
+
     }
 
     private List<Vector2> FindWalkablePositions() {//foreach position if is connected with this.position == walkable
