@@ -1,8 +1,22 @@
 ﻿using System;
+using System.Collections;
 using UnityEngine;
 using UnityEngine.SceneManagement;
+using UnityEngine.UI;
 
 public class GameManager : MonoBehaviour {
+
+    [SerializeField]
+    private GameObject readyDialog;
+
+    [SerializeField]
+    private GameObject gameOverDialog;
+
+    [SerializeField]
+    private GameObject playerHeader;
+
+    [SerializeField]
+    private Text playerNumber;
 
     internal enum GameMode { OnePlayer, TwoPlayer }
 
@@ -79,20 +93,18 @@ public class GameManager : MonoBehaviour {
                 }
             }
         }
+
+        SetPaused(true);
+        SetReadyDialog(true);
+        Invoke(nameof(UnPauseLater), 3f);
+
     }
 
-    internal void Pause() {
+    internal void SetPaused(bool paused) {
         foreach (EnemyBehaviour enemy in FindObjectsOfType<EnemyBehaviour>()) {
-            enemy.Paused = true;
+            enemy.Paused = paused;
         }
-        FindObjectOfType<PlayerController>().Paused = true;
-    }
-
-    internal void UnPause() {
-        foreach (EnemyBehaviour enemy in FindObjectsOfType<EnemyBehaviour>()) {
-            enemy.Paused = false;
-        }
-        FindObjectOfType<PlayerController>().Paused = false;
+        FindObjectOfType<PlayerController>().Paused = paused;
     }
 
     private void Update() {
@@ -128,13 +140,59 @@ public class GameManager : MonoBehaviour {
 
     }
 
-    private void GameOver() {//Trigger by animation? So player can finish death animation b4 being recenterered along with enemies
+    private void EndGameLater() {
+        SetPaused(false);
+        EndGame();
+    }
 
+    private void UnPauseLater() {
+        SetPaused(false);
+    }
+
+    private void GameOver() {//Do game over stuff before ending game
+
+        SetPaused(true);
+        SetGameOverDialog(true);
+        Invoke(nameof(EndGameLater), 3f);
+
+    }
+    private void EndGame() {
+
+        SetPaused(false);
         gameInProgress = false;
         sceneCounter = 0;
         SceneManager.LoadScene(sceneCounter);//menu
         playerOneLives = 3;
         playerTwoLives = 3;
+
+    }
+
+    private void SetReadyDialog(bool enabled) {
+
+        int currentPlayerNumber;
+
+        if (playerOneTurn)
+            currentPlayerNumber = 1;
+        else
+            currentPlayerNumber = 2;
+
+        playerNumber.text = currentPlayerNumber.ToString();
+        playerHeader.SetActive(!playerHeader.activeSelf);
+        readyDialog.SetActive(!readyDialog.activeSelf);
+    }
+
+    private void SetGameOverDialog(bool enabled) {
+
+        int currentPlayerNumber;
+
+        if (playerOneTurn)
+            currentPlayerNumber = 1;
+        else
+            currentPlayerNumber = 2;
+
+        playerNumber.text = currentPlayerNumber.ToString();
+        playerHeader.SetActive(!playerHeader.activeSelf);
+        gameOverDialog.SetActive(!gameOverDialog.activeSelf);
 
     }
 }

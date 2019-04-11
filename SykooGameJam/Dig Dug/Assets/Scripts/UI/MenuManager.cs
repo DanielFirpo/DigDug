@@ -77,7 +77,7 @@ public class MenuManager : MonoBehaviour {
         }
 
         if (Input.GetKeyDown(KeyCode.Space) || Input.GetKeyDown(KeyCode.Return)) {
-            if (!animator.GetCurrentAnimatorStateInfo(0).IsName("MenuTransition")) {//if the animation is not playing, do option, otherwise skip anim first and make them press enter again
+            if (!animator.GetCurrentAnimatorStateInfo(0).IsName("MenuTransition")) {//if the animation is not playing, do option, otherwise skip anim first and make them press enter again//TODO: Fix, sometimes you gotta press enter once before it DoesOption()
                 currentlySelected.DoOption();
             }
             else {

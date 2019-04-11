@@ -114,11 +114,11 @@ public class PlayerController: MonoBehaviour {
     }
 
     public void Dying() {//called by animator. Pause at start of death animation
-        gameManager.Pause();
+        gameManager.SetPaused(true);
     }
 
     public void Died() {//called by animator. unpause and kill the player now that the death animation has ended
-        gameManager.UnPause();
+        gameManager.SetPaused(false);
         gameManager.OnDeath();
     }
 
