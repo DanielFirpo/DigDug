@@ -270,7 +270,7 @@ RectTransform:
   - {fileID: 466680911}
   - {fileID: 292203193}
   m_Father: {fileID: 1246003547}
-  m_RootOrder: 0
+  m_RootOrder: 1
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0, y: 0}
   m_AnchorMax: {x: 1, y: 1}
@@ -1467,7 +1467,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 0
+  m_IsActive: 1
 --- !u!114 &1246003544
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -1535,6 +1535,7 @@ RectTransform:
   m_LocalPosition: {x: 0, y: 0, z: 0}
   m_LocalScale: {x: 0, y: 0, z: 0}
   m_Children:
+  - {fileID: 1969078894}
   - {fileID: 124370487}
   m_Father: {fileID: 0}
   m_RootOrder: 3
@@ -1889,10 +1890,10 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: bccf058603a5d3040ae9178ed70af2ef, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  readyDialog: {fileID: 0}
-  gameOverDialog: {fileID: 0}
-  playerHeader: {fileID: 0}
-  playerNumber: {fileID: 0}
+  readyDialog: {fileID: 2003810441}
+  gameOverDialog: {fileID: 604023078}
+  playerHeader: {fileID: 2124021679}
+  playerNumber: {fileID: 1086782568}
 --- !u!4 &1834361455
 Transform:
   m_ObjectHideFlags: 0
@@ -1905,7 +1906,7 @@ Transform:
   m_Children:
   - {fileID: 176160629}
   m_Father: {fileID: 0}
-  m_RootOrder: 6
+  m_RootOrder: 5
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &1836677544
 GameObject:
@@ -2004,12 +2005,12 @@ Transform:
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInternal: {fileID: 0}
   m_GameObject: {fileID: 1969078893}
-  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 557.5303, y: 269.5477, z: 0}
+  m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
+  m_LocalPosition: {x: 45.530273, y: -114.4523, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_Children: []
-  m_Father: {fileID: 0}
-  m_RootOrder: 5
+  m_Father: {fileID: 1246003547}
+  m_RootOrder: 0
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!114 &1969078895
 MonoBehaviour:
@@ -2031,6 +2032,7 @@ MonoBehaviour:
   lastScoreP2: {fileID: 1111242356}
   transitionDone: 0
   animator: {fileID: 1246003548}
+  hasPlayedMenuTransition: 0
 --- !u!1 &2003810441
 GameObject:
   m_ObjectHideFlags: 0

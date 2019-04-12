@@ -18,6 +18,8 @@ public class GameManager : MonoBehaviour {
     [SerializeField]
     private Text playerNumber;
 
+    private Queue dialogQueue;//Sometimes we want to trigger more than one dialog, but we don't want them to play at the same time so we have this queue.
+
     internal enum GameMode { OnePlayer, TwoPlayer }
 
     private GameMode currentGameMode;
@@ -29,6 +31,8 @@ public class GameManager : MonoBehaviour {
     private bool playerOneTurn = true;//false = player two's turn, true = player one
 
     private bool gameInProgress = false;
+
+    private object currentDialogInProgress;
 
     private int levelCount;
 
@@ -45,6 +49,13 @@ public class GameManager : MonoBehaviour {
 
     private static bool created;
 
+    internal bool HasGameEnded {
+        get {
+            return playerOneLives <= 0 && currentGameMode == GameMode.OnePlayer || playerTwoLives <= 0 && playerOneLives <= 0;
+        }
+    }
+
+
     private void Awake() {
         if (!created) {
             DontDestroyOnLoad(this.gameObject);
@@ -53,6 +64,26 @@ public class GameManager : MonoBehaviour {
 
         else {
             Destroy(this.gameObject);
+        }
+    }
+
+    private void Start() {
+        dialogQueue = new Queue();
+    }
+
+    private void Update() {
+        if (currentDialogInProgress == null && dialogQueue.Count >= 1) {//play next dialog
+
+            currentDialogInProgress = dialogQueue.Dequeue();
+
+            if (currentDialogInProgress is ReadyDialog) {
+                ReadyDialog dialog = currentDialogInProgress as ReadyDialog;
+                dialog.DoDialog();
+            }
+            else {
+                GameOverDialog dialog = currentDialogInProgress as GameOverDialog;
+                dialog.DoDialog();
+            }
         }
     }
 
@@ -77,6 +108,12 @@ public class GameManager : MonoBehaviour {
         PlayerController player = FindObjectOfType<PlayerController>();
         player.transform.position = player.StartPosition;
 
+        if (playerOneLives <= 0 || playerTwoLives <= 0) {
+            currentDialogInProgress = new GameOverDialog(4f, this);//There shouldn't be a dialog playing already, so do an immediate game over dialog. I would dialogQueue.enqueue here but the turn changes and by the time it's dequeued it will say the wrong player has game overed... This queue system could use some polish tbh
+            GameOverDialog dialog = currentDialogInProgress as GameOverDialog;//TODO change dialogs to actual classes with inheritance to avoid this bs (interface prob)
+            dialog.DoDialog();
+        }
+
         if (currentGameMode == GameMode.OnePlayer) {
             playerOneTurn = true;
         }
@@ -84,19 +121,21 @@ public class GameManager : MonoBehaviour {
 
             if (playerOneTurn) {
                 if (playerTwoLives >= 1) {
+                    PlayerStats.CurrentLevelP2 = levelCount;
                     playerOneTurn = false;
                 }
             }
             else {
                 if (playerOneLives >= 1) {
+                    PlayerStats.CurrentLevelP1 = levelCount;
                     playerOneTurn = true;
                 }
             }
         }
 
-        SetPaused(true);
-        SetReadyDialog(true);
-        Invoke(nameof(UnPauseLater), 3f);
+        if (!HasGameEnded) {
+            dialogQueue.Enqueue(new ReadyDialog(3f, this));
+        }
 
     }
 
@@ -105,12 +144,6 @@ public class GameManager : MonoBehaviour {
             enemy.Paused = paused;
         }
         FindObjectOfType<PlayerController>().Paused = paused;
-    }
-
-    private void Update() {
-        if (playerOneLives <= 0 && currentGameMode == GameMode.OnePlayer || playerTwoLives <= 0 && playerOneLives <= 0) {
-            GameOver();
-        }
     }
 
     internal void NewGame(GameMode gameMode) {
@@ -140,22 +173,26 @@ public class GameManager : MonoBehaviour {
 
     }
 
-    private void EndGameLater() {
+    private void ReverseGameOverDialog() {
+        SetGameOverDialog(false);
         SetPaused(false);
-        EndGame();
+        currentDialogInProgress = null;
+
+        if (HasGameEnded) {
+            EndGame();
+        }
     }
 
-    private void UnPauseLater() {
+    private void ReverseReadyDialog() {
+        SetReadyDialog(false);
         SetPaused(false);
+        currentDialogInProgress = null;
     }
 
     private void GameOver() {//Do game over stuff before ending game
-
-        SetPaused(true);
-        SetGameOverDialog(true);
-        Invoke(nameof(EndGameLater), 3f);
-
+        dialogQueue.Enqueue(new GameOverDialog(3f, this));
     }
+
     private void EndGame() {
 
         SetPaused(false);
@@ -177,8 +214,8 @@ public class GameManager : MonoBehaviour {
             currentPlayerNumber = 2;
 
         playerNumber.text = currentPlayerNumber.ToString();
-        playerHeader.SetActive(!playerHeader.activeSelf);
-        readyDialog.SetActive(!readyDialog.activeSelf);
+        playerHeader.SetActive(enabled);
+        readyDialog.SetActive(enabled);
     }
 
     private void SetGameOverDialog(bool enabled) {
@@ -191,8 +228,43 @@ public class GameManager : MonoBehaviour {
             currentPlayerNumber = 2;
 
         playerNumber.text = currentPlayerNumber.ToString();
-        playerHeader.SetActive(!playerHeader.activeSelf);
-        gameOverDialog.SetActive(!gameOverDialog.activeSelf);
+        playerHeader.SetActive(enabled);
+        gameOverDialog.SetActive(enabled);
 
+    }
+
+    private class ReadyDialog {
+
+        private float displayDuration;
+        private GameManager gameManager;
+
+        public ReadyDialog(float displayDuration, GameManager gameManager) {
+            this.displayDuration = displayDuration;
+            this.gameManager = gameManager;
+        }
+
+        internal void DoDialog() {
+            gameManager.SetPaused(true);
+            gameManager.SetReadyDialog(true);
+            gameManager.Invoke(nameof(ReverseReadyDialog), displayDuration);
+        }
+
+    }
+
+    private class GameOverDialog {
+
+        private float displayDuration;
+        private GameManager gameManager;
+
+        public GameOverDialog(float displayDuration, GameManager gameManager) {
+            this.displayDuration = displayDuration;
+            this.gameManager = gameManager;
+        }
+
+        internal void DoDialog() {
+            gameManager.SetPaused(true);
+            gameManager.SetGameOverDialog(true);
+            gameManager.Invoke(nameof(ReverseGameOverDialog), displayDuration);
+        }
     }
 }

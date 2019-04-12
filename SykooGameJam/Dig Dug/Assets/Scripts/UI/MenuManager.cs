@@ -28,24 +28,25 @@ public class MenuManager : MonoBehaviour {
     [SerializeField]
     private Animator animator;
 
+    [SerializeField]
+    private bool hasPlayedMenuTransition;
+    private bool skipped;
+
     private void Start() {
         highLevel.text = PlayerStats.HighLevel.ToString();
         highScore.text = PlayerStats.HighScore.ToString();
 
         lastScoreP1.text = PlayerStats.CurrentScoreP1.ToString();//CurrentScore is last score since it doesn't get cleared until calling GameManager.NewGame();
         lastScoreP2.text = PlayerStats.CurrentScoreP2.ToString();
+
+        currentlySelected = menuOptions[0];
     }
 
     private void Update () {
 
-        if(currentlySelected != null) currentlySelected.Deselected();//deselect this option in case we change to a differnt one during this frame
+        currentlySelected.Deselected();
 
         if (Input.GetKeyDown(KeyCode.UpArrow)) {
-
-            if (currentlySelected == null) {//could just set currentlySelected to the first option in Start() and avoid some null checks but I want no option to be selected when the game starts
-                currentlySelected = menuOptions[0];
-                return;
-            }
 
             int currentlySelectedIndex = menuOptions.IndexOf(currentlySelected);
 
@@ -60,11 +61,6 @@ public class MenuManager : MonoBehaviour {
 
         if (Input.GetKeyDown(KeyCode.DownArrow)) {
 
-            if (currentlySelected == null) {
-                currentlySelected = menuOptions[0];
-                return;
-            }
-
             int currentlySelectedIndex = menuOptions.IndexOf(currentlySelected);
 
             if (currentlySelectedIndex >= menuOptions.Count - 1) {
@@ -77,15 +73,16 @@ public class MenuManager : MonoBehaviour {
         }
 
         if (Input.GetKeyDown(KeyCode.Space) || Input.GetKeyDown(KeyCode.Return)) {
-            if (!animator.GetCurrentAnimatorStateInfo(0).IsName("MenuTransition")) {//if the animation is not playing, do option, otherwise skip anim first and make them press enter again//TODO: Fix, sometimes you gotta press enter once before it DoesOption()
+            if (hasPlayedMenuTransition || skipped) {//if the animation is not playing, do option, otherwise skip anim first and make them press enter again//TODO: Fix, sometimes you gotta press enter once before it DoesOption()
                 currentlySelected.DoOption();
             }
             else {
+                skipped = true;
                 animator.SetTrigger("SkipTransition");
             }
         }
 
-        if(currentlySelected != null) currentlySelected.Selected();//tell (new?) option that it's selected
+        currentlySelected.Selected();//tell (new?) option that it's selected
 
     }
 }
