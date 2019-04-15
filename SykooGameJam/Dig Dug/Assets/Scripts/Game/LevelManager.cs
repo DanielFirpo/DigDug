@@ -107,6 +107,16 @@ public class LevelManager : MonoBehaviour {
 
     }
 
+    internal bool IsConnected(Vector2 pos1, Vector2 pos2, float disconnectedThreshold) {
+
+        if (Vector2.Distance(pos1, pos2) < disconnectedThreshold) {
+            return true;
+        }
+
+        return false;
+
+    }
+
     private void PlaceGridDebugMarkers() {
 
         Debug.Log("xGridlines: " + XGridlines + " yGridlines: " + YGridlines);

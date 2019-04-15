@@ -10,7 +10,10 @@ public class PlayerController: MonoBehaviour {
     internal FacingDirection CurrentlyFacing { get; private set; }
 
     [SerializeField]
-    private float speed = 1;
+    private float speed;
+
+    [SerializeField]
+    private float digSpeed;
 
     private Vector3 lastDigLoc;
 
@@ -30,6 +33,8 @@ public class PlayerController: MonoBehaviour {
     [SerializeField]
     private bool isDying;//manipulated by animator, true while death animation is playing
 
+    private bool isDigging;
+
     private float lastDigTime;
 
     public Vector3 StartPosition { get; private set; }//could just be a constant Vector2 but this is cooler
@@ -42,7 +47,7 @@ public class PlayerController: MonoBehaviour {
     private bool wasOffDesiredGridline;
 
     void Start() {
-        CurrentlyFacing = FacingDirection.Down;
+        CurrentlyFacing = FacingDirection.Right;
         levelManager = FindObjectOfType<LevelManager>();
         weapon = FindObjectOfType<Weapon>();
         animator = GetComponent<Animator>();
@@ -58,14 +63,20 @@ public class PlayerController: MonoBehaviour {
         }
 
         if (Input.GetKeyDown(KeyCode.Space)) {
-            animator.Rebind();
+
             animator.SetTrigger("AttackStart");
             weapon.Attack();
         }
 
-        if (weapon.attackInProgress) {//if we're attacking, don't move
+        if (weapon.casting) {//if we're casting our attack, don't move
             return;
         }
+
+        if (Time.time - lastDigTime > .2f) {
+            isDigging = false;
+        }
+
+        RotateToMatchFacing();
 
         if (Input.GetKey(KeyCode.UpArrow)) {
             if (IsOnXGridline(transform.position.x)) {
@@ -113,6 +124,25 @@ public class PlayerController: MonoBehaviour {
 
     }
 
+    private void RotateToMatchFacing() {
+        if (CurrentlyFacing == FacingDirection.Up) {
+            transform.rotation = Quaternion.Euler(new Vector3(0, 0, 90));
+            transform.localScale = new Vector3(8, 8, 1);
+        }
+        else if(CurrentlyFacing == FacingDirection.Down) {
+            transform.rotation = Quaternion.Euler(new Vector3(0, 0, 90));
+            transform.localScale = new Vector3(-8, 8, 1);
+        }
+        else if (CurrentlyFacing == FacingDirection.Right) {
+            transform.rotation = Quaternion.Euler(new Vector3(0, 0, 0));
+            transform.localScale = new Vector3(-8, 8, 1);
+        }
+        else {//left
+            transform.rotation = Quaternion.Euler(new Vector3(0, 0, 0));
+            transform.localScale = new Vector3(8, 8, 1);
+        }
+    }
+
     public void Dying() {//called by animator. Pause at start of death animation
         gameManager.SetPaused(true);
     }
@@ -124,8 +154,10 @@ public class PlayerController: MonoBehaviour {
 
     private void OnTriggerEnter2D(Collider2D collision) {
         if (collision.CompareTag("Enemy")) {
-            animator.SetTrigger("Die");
-            //FindObjectOfType<GameManager>().OnDeath();//TODO: GET IN STARRT TO LAZY RN
+            EnemyBehaviour attacker = collision.GetComponent<EnemyBehaviour>();
+            if (attacker.CurrentGoal != EnemyBehaviour.Goal.Ghost && attacker.Inflation <= 0) {
+                animator.SetTrigger("Die");
+            }
         }
     }
 
@@ -136,7 +168,9 @@ public class PlayerController: MonoBehaviour {
 
                 levelManager.DoDigAt(transform.position);
                 lastDigLoc = this.transform.position;
+                lastDigTime = Time.time;
 
+                isDigging = true;
 
                 animator.SetTrigger("Dig");
 
@@ -145,45 +179,63 @@ public class PlayerController: MonoBehaviour {
 
     }
 
+    private void OnMove() {
+        animator.SetTrigger("Run");
+        Dig(digFrequency);
+        weapon.StopAttack();
+    }
+
     private void MoveUp() {
         if (transform.position.y < 0) {
-            this.transform.Translate(0, speed * Time.deltaTime, 0);
-            animator.SetTrigger("Run");
-            Dig(digFrequency);
+            if (isDigging) {
+                this.transform.Translate(0, digSpeed * Time.deltaTime, 0, Space.World);
+            }
+            else {
+                this.transform.Translate(0, speed * Time.deltaTime, 0, Space.World);
+            }
+            CurrentlyFacing = FacingDirection.Up;
+            OnMove();
         }
     }
 
     private void MoveDown() {
         if (transform.position.y > (levelManager.YGridlines - 1) * -levelManager.GridlineSpacing) {
-            this.transform.Translate(0, -speed * Time.deltaTime, 0);
-            animator.SetTrigger("Run");
-            Dig(digFrequency);
+            CurrentlyFacing = FacingDirection.Down;
+            if (isDigging) {
+                this.transform.Translate(0, -digSpeed * Time.deltaTime, 0, Space.World);
+            }
+            else {
+                this.transform.Translate(0, -speed * Time.deltaTime, 0, Space.World);
+            }
+            OnMove();
         }
     }
 
     private void MoveRight() {
         if (transform.position.x > (levelManager.XGridlines - 1) * -levelManager.GridlineSpacing) {
-            this.transform.Translate(-speed * Time.deltaTime, 0, 0);
-            animator.SetTrigger("Run");
-            Dig(digFrequency);
+            if (isDigging) {
+                this.transform.Translate(-digSpeed * Time.deltaTime, 0, 0, Space.World);
+            }
+            else {
+                this.transform.Translate(-speed * Time.deltaTime, 0, 0, Space.World);
+            }
+            CurrentlyFacing = FacingDirection.Right;
+            OnMove();
         }
     }
 
     private void MoveLeft() {
         if (transform.position.x < 0) {
-            this.transform.Translate(speed * Time.deltaTime, 0, 0);
-            animator.SetTrigger("Run");
-            Dig(digFrequency);
+            if (isDigging) {
+                this.transform.Translate(digSpeed * Time.deltaTime, 0, 0, Space.World);
+            }
+            else {
+                this.transform.Translate(speed * Time.deltaTime, 0, 0, Space.World);
+            }
+            CurrentlyFacing = FacingDirection.Left;
+            OnMove();
         }
-    }
-
-    //internal Vector3 FacingDirectionToEuler() {
-       // if (CurrentlyFacing == FacingDirection.Up) {
-            
-        //}
-    //}
-
-        
+    }      
 
     private void MoveTowardsClosestXGridline() {
 

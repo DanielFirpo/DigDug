@@ -13,10 +13,37 @@ public class GameManager : MonoBehaviour {
     private GameObject gameOverDialog;
 
     [SerializeField]
-    private GameObject playerHeader;
+    private GameObject playerDialogHeader;
 
     [SerializeField]
-    private Text playerNumber;
+    private Text playerDialogNumber;
+
+    [SerializeField]
+    private GameObject statsSidebar;
+
+    [SerializeField]
+    private Text sidebarPlayerOneScore;
+
+    [SerializeField]
+    private Text sidebarPlayerTwoScore;
+
+    [SerializeField]
+    private Text sidebarLevelNumber;
+
+    [SerializeField]
+    private Text sidebarHighScore;
+
+    [SerializeField]
+    private GameObject sidebarPlayerOneLivesParent;
+
+    [SerializeField]
+    private GameObject sidebarPlayerTwoLivesParent;
+
+    [SerializeField]
+    private GameObject[] sidebarPlayerOneLives;
+
+    [SerializeField]
+    private GameObject[] sidebarPlayerTwoLives;
 
     private Queue dialogQueue;//Sometimes we want to trigger more than one dialog, but we don't want them to play at the same time so we have this queue.
 
@@ -72,6 +99,16 @@ public class GameManager : MonoBehaviour {
     }
 
     private void Update() {
+
+        if (gameInProgress) {//statsSidebar
+
+            UpdateSidebar();
+
+        }
+        else {
+            statsSidebar.gameObject.SetActive(false);
+        }
+
         if (currentDialogInProgress == null && dialogQueue.Count >= 1) {//play next dialog
 
             currentDialogInProgress = dialogQueue.Dequeue();
@@ -85,6 +122,76 @@ public class GameManager : MonoBehaviour {
                 dialog.DoDialog();
             }
         }
+    }
+
+    private void UpdateSidebar() {
+
+        statsSidebar.SetActive(true);
+
+        sidebarHighScore.text = PlayerStats.HighScore.ToString();
+        sidebarLevelNumber.text = levelCount.ToString();
+        sidebarPlayerOneScore.text = PlayerStats.CurrentScoreP1.ToString();
+        sidebarPlayerOneScore.text = PlayerStats.CurrentScoreP2.ToString();
+
+        if (playerOneTurn) {
+
+            sidebarPlayerTwoLivesParent.SetActive(false);
+            sidebarPlayerOneLivesParent.SetActive(true);
+
+            switch (playerOneLives) {
+
+                case 0:
+                    sidebarPlayerOneLives[0].SetActive(false);
+                    sidebarPlayerOneLives[1].SetActive(false);
+                    sidebarPlayerOneLives[2].SetActive(false);
+                    break;
+                case 1:
+                    sidebarPlayerOneLives[0].SetActive(true);
+                    sidebarPlayerOneLives[1].SetActive(false);
+                    sidebarPlayerOneLives[2].SetActive(false);
+                    break;
+                case 2:
+                    sidebarPlayerOneLives[0].SetActive(true);
+                    sidebarPlayerOneLives[1].SetActive(true);
+                    sidebarPlayerOneLives[2].SetActive(false);
+                    break;
+                        case 3:
+                    sidebarPlayerOneLives[0].SetActive(true);
+                    sidebarPlayerOneLives[1].SetActive(true);
+                    sidebarPlayerOneLives[2].SetActive(true);
+                    break;
+            }
+        }
+        else {
+            sidebarPlayerOneLivesParent.SetActive(false);
+            sidebarPlayerTwoLivesParent.SetActive(true);
+
+            switch (playerTwoLives) {
+
+                case 0:
+                    sidebarPlayerTwoLives[0].SetActive(false);
+                    sidebarPlayerTwoLives[1].SetActive(false);
+                    sidebarPlayerTwoLives[2].SetActive(false);
+                    break;
+                case 1:
+                    sidebarPlayerTwoLives[0].SetActive(true);
+                    sidebarPlayerTwoLives[1].SetActive(false);
+                    sidebarPlayerTwoLives[2].SetActive(false);
+                    break;
+                case 2:
+                    sidebarPlayerTwoLives[0].SetActive(true);
+                    sidebarPlayerTwoLives[1].SetActive(true);
+                    sidebarPlayerTwoLives[2].SetActive(false);
+                    break;
+                case 3:
+                    sidebarPlayerTwoLives[0].SetActive(true);
+                    sidebarPlayerTwoLives[1].SetActive(true);
+                    sidebarPlayerTwoLives[2].SetActive(true);
+                    break;
+            }
+
+        }
+
     }
 
     internal void OnDeath() {//called by PlayerControllers
@@ -213,8 +320,8 @@ public class GameManager : MonoBehaviour {
         else
             currentPlayerNumber = 2;
 
-        playerNumber.text = currentPlayerNumber.ToString();
-        playerHeader.SetActive(enabled);
+        playerDialogNumber.text = currentPlayerNumber.ToString();
+        playerDialogHeader.SetActive(enabled);
         readyDialog.SetActive(enabled);
     }
 
@@ -227,8 +334,8 @@ public class GameManager : MonoBehaviour {
         else
             currentPlayerNumber = 2;
 
-        playerNumber.text = currentPlayerNumber.ToString();
-        playerHeader.SetActive(enabled);
+        playerDialogNumber.text = currentPlayerNumber.ToString();
+        playerDialogHeader.SetActive(enabled);
         gameOverDialog.SetActive(enabled);
 
     }

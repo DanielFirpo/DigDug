@@ -62,10 +62,10 @@ public class EnemyBehaviour: MonoBehaviour {
     ///Attack = only if Fygar, stops for a moment to breath fire
     ///flee = if rock is falling, and our y gridline is less than the rock's y gridline, and on the same x gridline... flee. speed*fleeSpeedMultiplier and run whichever way is further from the rock.
     /// </summary>
-    private enum Goal { Idle, Ghost, Chase, Attack, Flee }
+    internal enum Goal { Idle, Ghost, Chase, Attack, Flee }
 
     private Vector3 fleePos;//Where we're currently running from
-    private Goal currentGoal = Goal.Idle;
+    internal Goal CurrentGoal { get; private set; } = Goal.Idle;
 
     private enum EnemyType { Fygar, Pooka }
 
@@ -162,7 +162,7 @@ public class EnemyBehaviour: MonoBehaviour {
 
         if (Time.time - timeSinceLastDeflation > deflationSpeed) {//slowly deflate
             Inflation -= 1;
-            Debug.Log("Deflating");
+            //Debug.Log("Deflating");
         }
 
         SetInflationSprite();
@@ -176,20 +176,20 @@ public class EnemyBehaviour: MonoBehaviour {
                 if (Time.time - fleeStartTime > 5) {
                     Debug.Log("Starting flee");
                     fleePos = rock.transform.position;
-                    currentGoal = Goal.Flee;
+                    CurrentGoal = Goal.Flee;
                     fleeStartTime = Time.time;
                 }
             }
         }
 
-        if (currentGoal == Goal.Ghost) {
+        if (CurrentGoal == Goal.Ghost) {
             spriteRenderer.sprite = ghostSprite;
         }
         else {
             spriteRenderer.sprite = enemySprite;
         }
 
-        if (currentGoal == Goal.Idle) {
+        if (CurrentGoal == Goal.Idle) {
 
             //PrintDirection(travelDirection);
 
@@ -232,23 +232,23 @@ public class EnemyBehaviour: MonoBehaviour {
             MoveTowardsTarget();
 
         }
-        else if (currentGoal == Goal.Ghost) {
+        else if (CurrentGoal == Goal.Ghost) {
 
             MoveTowardsTarget();
 
             if (!progressingTowardsTarget || (!IsInTunnel().Equals(nullVector) && Vector2.Distance(IsInTunnel(), ghostStartingPosition) > 1.5)) {//if we've made it to the target, or we're in a tunnel that is not the tunnel where we started, chase
                 TravelTarget = FindBestChaseTarget(FindWalkablePositions());
-                currentGoal = Goal.Chase;
+                CurrentGoal = Goal.Chase;
                 return;
             }
 
         }
-        else if (currentGoal == Goal.Chase) {
+        else if (CurrentGoal == Goal.Chase) {
 
             if (enemyType == EnemyType.Fygar) {
                 if (Time.time - fygarLastAttackTime > fygarAttackFrequency) {
                     if (Vector3.Distance(transform.position, playerController.transform.position) < fygarAttackRange) {
-                        currentGoal = Goal.Attack;
+                        CurrentGoal = Goal.Attack;
                         return;
                     }
                 }
@@ -271,18 +271,18 @@ public class EnemyBehaviour: MonoBehaviour {
             }
 
         }
-        else if (currentGoal == Goal.Attack) {
+        else if (CurrentGoal == Goal.Attack) {
 
-            Debug.Log("Attacking");
+            //Debug.Log("Attacking");
             DoAttack();
 
             if (Time.time - fygarLastAttackTime >= fygarAttackDuration) {//take dah chill pill mon an chess dem again
-                currentGoal = Goal.Chase;
+                CurrentGoal = Goal.Chase;
                 return;
             }
 
         }
-        else if (currentGoal == Goal.Flee) {
+        else if (CurrentGoal == Goal.Flee) {
 
             if (Time.time - fleeStartTime < 4) {
 
@@ -292,7 +292,7 @@ public class EnemyBehaviour: MonoBehaviour {
                 if (TravelTarget.Equals(nullVector) || currentlyFallingRocks.Count == 0) {//No where left to run, lets just chase from here on TODO: This is never the case, fix
                     Debug.Log("No where left to flee, chasing now");
                     TravelTarget = FindBestChaseTarget(FindWalkablePositions());
-                    currentGoal = Goal.Chase;
+                    CurrentGoal = Goal.Chase;
                     return;
                 }
 
@@ -301,7 +301,7 @@ public class EnemyBehaviour: MonoBehaviour {
             }
             else {
                 TravelTarget = FindBestChaseTarget(FindWalkablePositions());
-                currentGoal = Goal.Chase;
+                CurrentGoal = Goal.Chase;
                 return;
             }
         }
@@ -345,7 +345,7 @@ public class EnemyBehaviour: MonoBehaviour {
 
     private void StartGhosting(Vector2 target) {
         TravelTarget = target;
-        currentGoal = Goal.Ghost;
+        CurrentGoal = Goal.Ghost;
         ghostStartingPosition = ClosestPosition(levelManager.dugPositions);
     }
 
@@ -458,7 +458,7 @@ public class EnemyBehaviour: MonoBehaviour {
     }
 
     private void MoveTowardsTarget() {
-        if (currentGoal == Goal.Flee) {
+        if (CurrentGoal == Goal.Flee) {
             this.transform.position = Vector3.MoveTowards(transform.position, new Vector3(TravelTarget.x, TravelTarget.y, transform.position.z), speed * fleeSpeedMultiplier * Time.deltaTime);
         }
         else {

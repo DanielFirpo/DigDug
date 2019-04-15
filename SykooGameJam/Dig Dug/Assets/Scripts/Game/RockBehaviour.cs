@@ -58,7 +58,7 @@ public class RockBehaviour : MonoBehaviour {
 
                 foreach (Vector2 pos in levelManager.dugPositions) {
                     if (IsBelow(pos, TriggerRange)) {
-                        this.transform.position = new Vector3(this.transform.position.x, this.transform.position.y - (fallSpeed * Time.deltaTime), this.transform.position.z);
+                        this.transform.Translate(this.transform.position.x, this.transform.position.y - (fallSpeed * Time.deltaTime), this.transform.position.z);
                         noneBelow = false;
                     }
                 }
