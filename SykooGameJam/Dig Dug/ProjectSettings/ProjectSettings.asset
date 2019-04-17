@@ -649,7 +649,7 @@ PlayerSettings:
   cloudServicesEnabled:
     UNet: 1
   facebookSdkVersion: 7.9.4
-  apiCompatibilityLevel: 2
+  apiCompatibilityLevel: 3
   cloudProjectId: 80d331d0-ed45-4159-a96c-fc9b9ae3c7cb
   projectName: Dig Dug
   organizationId: turtled

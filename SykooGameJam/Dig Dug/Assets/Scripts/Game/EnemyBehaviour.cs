@@ -23,32 +23,13 @@ public class EnemyBehaviour: MonoBehaviour {
     [SerializeField, Range(.1f, 8f)]
     private float fygarAttackRange;
 
-    [SerializeField]
-    private float fygarAttackFrequency;
+    private float fygarAttackFrequency = 10;
 
     [SerializeField]
     private float fygarAttackDuration;
 
     [SerializeField]
     private float deflationSpeed;
-
-    [SerializeField]
-    private Sprite ghostSprite;
-
-    [SerializeField]
-    private Sprite enemySprite;
-
-    [SerializeField]
-    private Sprite inflated1;
-
-    [SerializeField]
-    private Sprite inflated2;
-
-    [SerializeField]
-    private Sprite inflated3;
-
-    [SerializeField]
-    private Sprite inflated4;
 
     [SerializeField]
     private Sprite squashedSprite;
@@ -114,6 +95,8 @@ public class EnemyBehaviour: MonoBehaviour {
 
     private bool isSquashed = false;
 
+    internal bool isDying { get; private set; } = false;
+
     internal List<RockBehaviour> currentlyFallingRocks { get; private set; }
 
     private float fleeStartTime;
@@ -122,9 +105,13 @@ public class EnemyBehaviour: MonoBehaviour {
 
     private float fygarLastAttackTime;
 
-    public Vector3 StartPosition { get; internal set; }//Used to return enemies to their starting positions after the player dies
+    private GameManager gameManager;
+
+    public Vector3 startPosition;//Used to return enemies to their starting positions after the player dies
 
     public bool Paused { get; internal set; }
+
+    private Animator animator;
 
 
 
@@ -134,7 +121,13 @@ public class EnemyBehaviour: MonoBehaviour {
     // Use this for initialization
     void Start () {
 
+        animator = GetComponent<Animator>();
+
+        gameManager = FindObjectOfType<GameManager>();
+
         idleTime = Time.time;
+
+        idleDuration += UnityEngine.Random.Range(1, 10);//make sure they all don't attack at once
 
         fleeStartTime = Time.time;
 
@@ -148,7 +141,7 @@ public class EnemyBehaviour: MonoBehaviour {
 
         spriteRenderer = GetComponent<SpriteRenderer>();
 
-        StartPosition = this.transform.position;
+        startPosition = this.transform.position;
 
     }//TODO: 1. Not new random, new direction with walkable positions. DONE 2. Don't let player dig already dug positions. DONE 3. Restrict enemy movement along gridlines.
 
@@ -165,7 +158,22 @@ public class EnemyBehaviour: MonoBehaviour {
             //Debug.Log("Deflating");
         }
 
-        SetInflationSprite();
+        animator.SetInteger("Inflation", Inflation);//if Inflation is greater than 0 the Animator will set the appropriate inflation sprite
+
+        if (Inflation == 4) {
+
+            if (isDying == false) {
+                if (gameManager.PlayerOneTurn) {
+                    PlayerStats.CurrentScoreP1 += PlayerStats.PointsPerKill;
+                }
+                else {
+                    PlayerStats.CurrentScoreP2 += PlayerStats.PointsPerKill;
+                }
+
+                Die(1f);
+            }
+
+        }
 
         if (isSquashed || Inflation > 0) {//if we're squashed or inflated freeze enemy behaviour
             return;
@@ -182,14 +190,9 @@ public class EnemyBehaviour: MonoBehaviour {
             }
         }
 
-        if (CurrentGoal == Goal.Ghost) {
-            spriteRenderer.sprite = ghostSprite;
-        }
-        else {
-            spriteRenderer.sprite = enemySprite;
-        }
-
         if (CurrentGoal == Goal.Idle) {
+
+            animator.SetTrigger("Run");
 
             //PrintDirection(travelDirection);
 
@@ -206,6 +209,7 @@ public class EnemyBehaviour: MonoBehaviour {
                             int rand = UnityEngine.Random.Range(1, 5);//25% chance to ghost/chase upon hitting a wall
                             if (rand == 1) {
                                 StartGhosting(new Vector2(playerController.transform.position.x, playerController.transform.position.y));
+                                fygarLastAttackTime = Time.time;
                                 return;
                             }
                         }
@@ -234,6 +238,9 @@ public class EnemyBehaviour: MonoBehaviour {
         }
         else if (CurrentGoal == Goal.Ghost) {
 
+            animator.ResetTrigger("Run");
+            animator.SetTrigger("Ghost");
+
             MoveTowardsTarget();
 
             if (!progressingTowardsTarget || (!IsInTunnel().Equals(nullVector) && Vector2.Distance(IsInTunnel(), ghostStartingPosition) > 1.5)) {//if we've made it to the target, or we're in a tunnel that is not the tunnel where we started, chase
@@ -245,12 +252,13 @@ public class EnemyBehaviour: MonoBehaviour {
         }
         else if (CurrentGoal == Goal.Chase) {
 
+            animator.SetTrigger("Run");
+
             if (enemyType == EnemyType.Fygar) {
                 if (Time.time - fygarLastAttackTime > fygarAttackFrequency) {
-                    if (Vector3.Distance(transform.position, playerController.transform.position) < fygarAttackRange) {
-                        CurrentGoal = Goal.Attack;
-                        return;
-                    }
+                    fygarLastAttackTime = Time.time;
+                    fygarAttackFrequency = UnityEngine.Random.Range(5, 15);//TODO: SerializeField constants
+                    CurrentGoal = Goal.Attack;
                 }
             }
 
@@ -284,6 +292,8 @@ public class EnemyBehaviour: MonoBehaviour {
         }
         else if (CurrentGoal == Goal.Flee) {
 
+            animator.SetTrigger("Run");
+
             if (Time.time - fleeStartTime < 4) {
 
                 TravelTarget = FindNewFleeTarget();
@@ -308,39 +318,23 @@ public class EnemyBehaviour: MonoBehaviour {
 
 	}
 
-    private void SetInflationSprite() {
-        switch (Inflation) {//TODO: Replace scale effect with actual inflation sprites
-            case 0:
-                spriteRenderer.sprite = enemySprite;
-                break;
-            case 1:
-                spriteRenderer.sprite = inflated1;
-                break;
-            case 2:
-                spriteRenderer.sprite = inflated2;
-                break;
-            case 3:
-                spriteRenderer.sprite = inflated3;
-                break;
-            case 4:
-                spriteRenderer.sprite = inflated4;
-                Die(1f);
-                break;
-            default:
-                Inflation = 4;
-                break;
-        }
+    internal void ResetBehaviour() {
+        transform.position = startPosition;
+        idleTime = Time.time;
+        CurrentGoal = Goal.Idle;
     }
 
     internal void Squash() {//Rocks can call this to make the enemy appear crushed
         if (!isSquashed) {
             spriteRenderer.sprite = squashedSprite;
             isSquashed = true;
+            Die(2f);
         }
     }
 
     private void DoAttack() {
         fygarLastAttackTime = Time.time;
+        animator.SetTrigger("Attack");
     }
 
     private void StartGhosting(Vector2 target) {
@@ -350,7 +344,9 @@ public class EnemyBehaviour: MonoBehaviour {
     }
 
     internal void Die(float later) {
+        isDying = true;
         Destroy(this.gameObject, later);
+        gameManager.OnEnemyDeath();
     }
 
     private Vector2 IsInTunnel() {//Checks if we're in a tunnel, and returns the tunnel's point we're closest to if so. If not, returns nullVector.
@@ -458,6 +454,7 @@ public class EnemyBehaviour: MonoBehaviour {
     }
 
     private void MoveTowardsTarget() {
+
         if (CurrentGoal == Goal.Flee) {
             this.transform.position = Vector3.MoveTowards(transform.position, new Vector3(TravelTarget.x, TravelTarget.y, transform.position.z), speed * fleeSpeedMultiplier * Time.deltaTime);
         }

@@ -36,11 +36,8 @@ public class Weapon : MonoBehaviour {
     [SerializeField]
     private SpriteRenderer hitRenderer;//current sprite being shown by the animator
 
-    private SpriteRenderer spriteRenderer;
-
     // Use this for initialization
     void Start () {
-        spriteRenderer = GetComponent<SpriteRenderer>();
         attackAnimator = GetComponent<Animator>();
         playerController = FindObjectOfType<PlayerController>();
         levelManager = FindObjectOfType<LevelManager>();
@@ -64,6 +61,7 @@ public class Weapon : MonoBehaviour {
                 casting = false;
                 attackAnimator.SetTrigger("StopAttack");
                 attackTrigger.transform.position = transform.position;//reset the attack trigger to be cast again
+                attackInProgress = false;
             }
 
         }
@@ -83,6 +81,7 @@ public class Weapon : MonoBehaviour {
         target = null;
         attackTrigger.transform.position = transform.position;
         hitRenderer.sprite = null;
+        casting = false;
     }
 
     internal void Attack() {

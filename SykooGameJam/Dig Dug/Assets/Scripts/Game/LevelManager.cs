@@ -64,7 +64,7 @@ public class LevelManager : MonoBehaviour {
     // Use this for initialization
     void Start () {
         dugPositions = new List<Vector2>();
-        PlaceGridDebugMarkers();
+        //PlaceGridDebugMarkers();
 
         foreach (Transform preDig in preDigParent) {//Foreach child of preDigParent
 
@@ -78,12 +78,14 @@ public class LevelManager : MonoBehaviour {
     }
 	
     internal void DoDigAt(Vector2 position) {//Unsafe, could dig off grid
+
         if (position.y < -GridlineSpacing/8) {//If we're above ground, count it as dug but don't display a digMask 
 
             Instantiate(DigMaskPrefab, new Vector3(position.x, position.y, 1.5f), Quaternion.identity, DigMaskParent);
         }
-        Instantiate(this.gridDebug, new Vector3(position.x, position.y, 10), Quaternion.identity).GetComponent<SpriteRenderer>().material.color = Color.red;
+
         dugPositions.Add(position);
+
     }
 
     internal bool IsAlreadyDug(Vector2 pos) {//if closer than digFrequency-x, we're probably re-digging

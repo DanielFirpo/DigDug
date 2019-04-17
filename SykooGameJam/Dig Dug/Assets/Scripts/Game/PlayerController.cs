@@ -25,20 +25,23 @@ public class PlayerController: MonoBehaviour {
 
     internal Animator animator { get; private set; }
 
-    [SerializeField]
-    private bool shouldDie;//The animator wants us to die now
-
     private bool hasDied;
 
-    [SerializeField]
-    private bool isDying;//manipulated by animator, true while death animation is playing
+    private bool isDying;
 
     private bool isDigging;
 
     private float lastDigTime;
 
-    public Vector3 StartPosition { get; private set; }//could just be a constant Vector2 but this is cooler
+    private bool hasMovedRecently;
+
+    private float lastMoveTime;
+
+    public Vector3 StartPosition { get; private set; }//could just be a constant Vector3 but setting this in Start is cooler
+
     public bool Paused { get; internal set; }
+
+    private AudioManager audioManager;
 
     private GameManager gameManager;
 
@@ -47,6 +50,7 @@ public class PlayerController: MonoBehaviour {
     private bool wasOffDesiredGridline;
 
     void Start() {
+        audioManager = FindObjectOfType<AudioManager>();
         CurrentlyFacing = FacingDirection.Right;
         levelManager = FindObjectOfType<LevelManager>();
         weapon = FindObjectOfType<Weapon>();
@@ -74,6 +78,17 @@ public class PlayerController: MonoBehaviour {
 
         if (Time.time - lastDigTime > .2f) {
             isDigging = false;
+        }
+
+        if (Time.time - lastMoveTime > .2f) {
+            hasMovedRecently = false;
+        }
+
+        if (hasMovedRecently) {
+            audioManager.PlayMusic();
+        }
+        else {
+            audioManager.PauseMusic();
         }
 
         RotateToMatchFacing();
@@ -124,6 +139,13 @@ public class PlayerController: MonoBehaviour {
 
     }
 
+    internal void StartDeath() {
+        if (!isDying) {
+            isDying = true;
+            animator.SetTrigger("Die");
+        }
+    }
+
     private void RotateToMatchFacing() {
         if (CurrentlyFacing == FacingDirection.Up) {
             transform.rotation = Quaternion.Euler(new Vector3(0, 0, 90));
@@ -143,20 +165,22 @@ public class PlayerController: MonoBehaviour {
         }
     }
 
-    public void Dying() {//called by animator. Pause at start of death animation
+    internal void Dying() {//called by animator. Pause at start of death animation
+        audioManager.PlayDeath();
         gameManager.SetPaused(true);
     }
 
     public void Died() {//called by animator. unpause and kill the player now that the death animation has ended
         gameManager.SetPaused(false);
         gameManager.OnDeath();
+        isDying = false;
     }
 
-    private void OnTriggerEnter2D(Collider2D collision) {
+    private void OnTriggerStay2D(Collider2D collision) {//OnTriggerStay instead of OnTriggerEnter cause enemies can ghost into player's collider and then as they stay they won't kill the player despite touching them
         if (collision.CompareTag("Enemy")) {
             EnemyBehaviour attacker = collision.GetComponent<EnemyBehaviour>();
             if (attacker.CurrentGoal != EnemyBehaviour.Goal.Ghost && attacker.Inflation <= 0) {
-                animator.SetTrigger("Die");
+                StartDeath();
             }
         }
     }
@@ -174,6 +198,12 @@ public class PlayerController: MonoBehaviour {
 
                 animator.SetTrigger("Dig");
 
+                if (gameManager.PlayerOneTurn) {
+                    PlayerStats.CurrentScoreP1 += PlayerStats.PointsPerDig;
+                }
+                else {
+                    PlayerStats.CurrentScoreP2 += PlayerStats.PointsPerDig;
+                }
             }
         }
 
@@ -183,6 +213,8 @@ public class PlayerController: MonoBehaviour {
         animator.SetTrigger("Run");
         Dig(digFrequency);
         weapon.StopAttack();
+        hasMovedRecently = true;
+        lastMoveTime = Time.time;
     }
 
     private void MoveUp() {

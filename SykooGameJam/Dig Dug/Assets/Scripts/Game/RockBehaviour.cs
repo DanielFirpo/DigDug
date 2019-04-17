@@ -10,26 +10,33 @@ public class RockBehaviour : MonoBehaviour {
     [SerializeField]
     private float fallDelay;
 
+    [SerializeField, Tooltip("How long after hitting a tunnel floor the rock will disapear")]
+    private float destroyDelay;
+
     [SerializeField, Tooltip("How close something needs to be to the rock to be considered directly under it.")]
     private float triggerRange;
+
+    private GameManager gameManager;
 
     internal float TriggerRange {
         get { return triggerRange; }
         private set { triggerRange = value; }
     }
 
-
     private bool isFalling = false;
+
     private float fallStartTime;
+
     private LevelManager levelManager;
+
     private PlayerController playerController;
+
     private EnemyBehaviour[] enemies;
-    private List<EnemyBehaviour> squashedEnemies;//A list of squashed enemies, we need this so we know who to kill once the rock shatters
 
     // Use this for initialization
     void Start () {
+        gameManager = FindObjectOfType<GameManager>();
         enemies = FindObjectsOfType<EnemyBehaviour>();
-        squashedEnemies = new List<EnemyBehaviour>();
         levelManager = FindObjectOfType<LevelManager>();
         playerController = FindObjectOfType<PlayerController>();
     }
@@ -37,6 +44,7 @@ public class RockBehaviour : MonoBehaviour {
 	void Update () {//TODO: Rock accelleration and fix fluctuating falling speed
 
         if (isFalling) {
+
             if (Time.time - fallStartTime > fallDelay) {
                 foreach (EnemyBehaviour enemy in enemies) {
                     if (enemy) {//Make sure that the enemy hasn't been destroyed since the start of the scene (we only get enemies once, in Start())
@@ -48,7 +56,12 @@ public class RockBehaviour : MonoBehaviour {
                         if (IsBelow(enemy.transform.position, TriggerRange / 2)) {//OOF
                             enemy.Squash();
                             enemy.transform.parent = this.transform;
-                            squashedEnemies.Add(enemy);
+                            if (gameManager.PlayerOneTurn) {
+                                PlayerStats.CurrentScoreP1 += PlayerStats.PointsPerSquash;
+                            }
+                            else {
+                                PlayerStats.CurrentScoreP2 += PlayerStats.PointsPerSquash;
+                            }
                         }
 
                     }
@@ -58,23 +71,27 @@ public class RockBehaviour : MonoBehaviour {
 
                 foreach (Vector2 pos in levelManager.dugPositions) {
                     if (IsBelow(pos, TriggerRange)) {
-                        this.transform.Translate(this.transform.position.x, this.transform.position.y - (fallSpeed * Time.deltaTime), this.transform.position.z);
-                        noneBelow = false;
+                        noneBelow = false;  
                     }
                 }
 
-                if (noneBelow) {
+                if (IsBelow(playerController.transform.position, TriggerRange / 2)) {
+                    playerController.StartDeath();
+                    noneBelow = true;//hit the player, lets stop falling or the rock will continue to fall and kill enemies while they're paused
+                }
+
+                if (!noneBelow) {
+                    this.transform.Translate(0, -(fallSpeed * Time.deltaTime), 0);
+                }
+                else {
 
                     foreach (EnemyBehaviour enemy in enemies) {
                         enemy.currentlyFallingRocks.Remove(this);
                     }
 
-                    foreach (EnemyBehaviour enemy in squashedEnemies) {
-                        enemy.Die(2);
-                    }
-
-                    DoShatterEffect();
                     isFalling = false;
+                    Destroy(GetComponent<BoxCollider2D>());
+                    Destroy(this.gameObject, destroyDelay);
 
                 }
             }

@@ -1,9 +1,51 @@
 ﻿
+using UnityEngine;
+
 public static class PlayerStats {
 
+    private static readonly string highScoreKey = "high_score";
+    private static readonly string highLevelKey = "high_level";
 
-    internal static int HighScore { get; private set; }
-    internal static int HighLevel { get; private set; }
+    private static bool recordStatsLoaded;
+
+    internal static readonly int PointsPerDig = 1;
+    internal static readonly int PointsPerKill = 500;
+    internal static readonly int PointsPerSquash = 1000;
+
+    private static int highScore;
+    private static int highLevel;
+
+    internal static int HighScore {
+        get {
+            if (recordStatsLoaded) {
+                return highScore;
+            }
+            else {
+                LoadRecordStats();
+                return highScore;
+            }
+        }
+        private set {
+            highScore = value;
+            PlayerPrefs.SetInt(highScoreKey, value);
+        }
+    }
+
+    internal static int HighLevel {
+        get {
+            if (recordStatsLoaded) {
+                return highLevel;
+            }
+            else {
+                LoadRecordStats();
+                return highLevel;
+            }
+        }
+        private set {
+            highLevel = value;
+            PlayerPrefs.SetInt(highLevelKey, value);
+        }
+    }
 
     private static int currentScoreP1;
 
@@ -17,6 +59,15 @@ public static class PlayerStats {
     internal static int CurrentLevelP1 {
         get { return currentLevelP1; }
         set { currentLevelP1 = value; if (currentLevelP1 > HighLevel) HighLevel = currentLevelP1; }
+    }
+
+    internal static void LoadRecordStats() {
+
+        HighScore = PlayerPrefs.GetInt(highScoreKey);
+        HighLevel = PlayerPrefs.GetInt(highLevelKey);
+
+        recordStatsLoaded = true;
+
     }
 
     private static int currentScoreP2;

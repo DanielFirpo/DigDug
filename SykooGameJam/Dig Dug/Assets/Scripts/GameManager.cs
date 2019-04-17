@@ -4,7 +4,7 @@ using UnityEngine;
 using UnityEngine.SceneManagement;
 using UnityEngine.UI;
 
-public class GameManager : MonoBehaviour {
+public class GameManager : MonoBehaviour {//For handling play sessions
 
     [SerializeField]
     private GameObject readyDialog;
@@ -55,7 +55,7 @@ public class GameManager : MonoBehaviour {
 
     private int playerTwoLives = 3;
 
-    private bool playerOneTurn = true;//false = player two's turn, true = player one
+    internal bool PlayerOneTurn { get; private set; } = true;//false = player two's turn, true = player one
 
     private bool gameInProgress = false;
 
@@ -96,6 +96,8 @@ public class GameManager : MonoBehaviour {
 
     private void Start() {
         dialogQueue = new Queue();
+
+        sidebarHighScore.text = PlayerStats.HighScore.ToString();//set it here or else UpdateSidebar() will slowly increment the display after the game starts, and we only want to do that as the player acheives a new highscore
     }
 
     private void Update() {
@@ -113,7 +115,7 @@ public class GameManager : MonoBehaviour {
 
             currentDialogInProgress = dialogQueue.Dequeue();
 
-            if (currentDialogInProgress is ReadyDialog) {
+            if (currentDialogInProgress is ReadyDialog) {//TODO: Fix this shit with inheritance
                 ReadyDialog dialog = currentDialogInProgress as ReadyDialog;
                 dialog.DoDialog();
             }
@@ -128,12 +130,33 @@ public class GameManager : MonoBehaviour {
 
         statsSidebar.SetActive(true);
 
-        sidebarHighScore.text = PlayerStats.HighScore.ToString();
-        sidebarLevelNumber.text = levelCount.ToString();
-        sidebarPlayerOneScore.text = PlayerStats.CurrentScoreP1.ToString();
-        sidebarPlayerOneScore.text = PlayerStats.CurrentScoreP2.ToString();
+        //count upwards a lil per frame when they get points for a cool effect 
+        int highscore = Int32.Parse(sidebarHighScore.text);
+        if (highscore < PlayerStats.HighScore - 4) {
+            sidebarHighScore.text = (highscore + 4).ToString();
+        }else if (highscore < PlayerStats.HighScore) {
+            sidebarHighScore.text = PlayerStats.HighScore.ToString();//if we're less than the actual high score but not quite ready for an addition of X, just set it to highscore
+        }
 
-        if (playerOneTurn) {
+        int scoreP1 = Int32.Parse(sidebarPlayerOneScore.text);
+        if (scoreP1 < PlayerStats.CurrentScoreP1 - 4) {
+            sidebarPlayerOneScore.text = (scoreP1 + 4).ToString();
+        }
+        else if (scoreP1 < PlayerStats.CurrentScoreP1) {
+            sidebarPlayerOneScore.text = PlayerStats.CurrentScoreP1.ToString();//if we're less than the actual high score but not quite ready for an addition of X, just set it to highscore
+        }
+
+        int scoreP2 = Int32.Parse(sidebarPlayerTwoScore.text);
+        if (scoreP2 < PlayerStats.CurrentScoreP2 - 4) {
+            sidebarPlayerTwoScore.text = (scoreP2 + 4).ToString();
+        }
+        else if (scoreP2 < PlayerStats.CurrentScoreP2) {
+            sidebarPlayerTwoScore.text = PlayerStats.CurrentScoreP2.ToString();//if we're less than the actual high score but not quite ready for an addition of X, just set it to highscore
+        }
+
+        sidebarLevelNumber.text = levelCount.ToString();
+
+        if (PlayerOneTurn) {
 
             sidebarPlayerTwoLivesParent.SetActive(false);
             sidebarPlayerOneLivesParent.SetActive(true);
@@ -196,7 +219,9 @@ public class GameManager : MonoBehaviour {
 
     internal void OnDeath() {//called by PlayerControllers
 
-        if (playerOneTurn) {
+        Debug.Log("OnDeath");
+
+        if (PlayerOneTurn) {
             playerOneLives--;
         }
         else {
@@ -209,8 +234,10 @@ public class GameManager : MonoBehaviour {
 
     private void NextTurn() {
 
+        Debug.Log("Next Turn");
+
         foreach (EnemyBehaviour enemy in FindObjectsOfType<EnemyBehaviour>()) {
-            enemy.transform.position = enemy.StartPosition;
+            enemy.ResetBehaviour();
         }
         PlayerController player = FindObjectOfType<PlayerController>();
         player.transform.position = player.StartPosition;
@@ -222,20 +249,20 @@ public class GameManager : MonoBehaviour {
         }
 
         if (currentGameMode == GameMode.OnePlayer) {
-            playerOneTurn = true;
+            PlayerOneTurn = true;
         }
         else {
 
-            if (playerOneTurn) {
+            if (PlayerOneTurn) {
                 if (playerTwoLives >= 1) {
                     PlayerStats.CurrentLevelP2 = levelCount;
-                    playerOneTurn = false;
+                    PlayerOneTurn = false;
                 }
             }
             else {
                 if (playerOneLives >= 1) {
                     PlayerStats.CurrentLevelP1 = levelCount;
-                    playerOneTurn = true;
+                    PlayerOneTurn = true;
                 }
             }
         }
@@ -315,7 +342,7 @@ public class GameManager : MonoBehaviour {
 
         int currentPlayerNumber;
 
-        if (playerOneTurn)
+        if (PlayerOneTurn)
             currentPlayerNumber = 1;
         else
             currentPlayerNumber = 2;
@@ -329,7 +356,7 @@ public class GameManager : MonoBehaviour {
 
         int currentPlayerNumber;
 
-        if (playerOneTurn)
+        if (PlayerOneTurn)
             currentPlayerNumber = 1;
         else
             currentPlayerNumber = 2;
@@ -372,6 +399,23 @@ public class GameManager : MonoBehaviour {
             gameManager.SetPaused(true);
             gameManager.SetGameOverDialog(true);
             gameManager.Invoke(nameof(ReverseGameOverDialog), displayDuration);
+        }
+    }
+
+    private int EnemiesStillAlive() {
+        int enemies = 0;
+        foreach (EnemyBehaviour enemy in FindObjectsOfType<EnemyBehaviour>()) {
+            if (!enemy.isDying) {
+                enemies++;
+            }
+        }
+        return enemies;
+    }
+
+    internal void OnEnemyDeath() {
+        if (EnemiesStillAlive() <= 0) {
+            NextLevel();
+            Debug.Log("YOU WIN!");
         }
     }
 }
