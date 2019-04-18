@@ -113,10 +113,9 @@ public class EnemyBehaviour: MonoBehaviour {
 
     private Animator animator;
 
+    private bool hasAttackedThisGoal;
 
-
-    //Need this cause if we didn't move since we last changed direction, we're going to think we're not making progress so change directions again (causing a loop of direction changes and never moving anywhere)
-    //private bool hasMovedSinceLastDirectionChange = true;
+    private bool doneAttacking;
 
     // Use this for initialization
     void Start () {
@@ -179,13 +178,16 @@ public class EnemyBehaviour: MonoBehaviour {
             return;
         }
 
+
         foreach (RockBehaviour rock in currentlyFallingRocks) {
-            if (rock.transform.position.y > transform.position.y && Mathf.Abs(rock.transform.position.x - transform.position.x) < rock.TriggerRange) {
-                if (Time.time - fleeStartTime > 5) {
-                    Debug.Log("Starting flee");
-                    fleePos = rock.transform.position;
-                    CurrentGoal = Goal.Flee;
-                    fleeStartTime = Time.time;
+            if (rock) {
+                if (rock.transform.position.y > transform.position.y && Mathf.Abs(rock.transform.position.x - transform.position.x) < rock.TriggerRange) {
+                    if (Time.time - fleeStartTime > 5) {
+                        Debug.Log("Starting flee");
+                        fleePos = rock.transform.position;
+                        CurrentGoal = Goal.Flee;
+                        fleeStartTime = Time.time;
+                    }
                 }
             }
         }
@@ -284,8 +286,10 @@ public class EnemyBehaviour: MonoBehaviour {
             //Debug.Log("Attacking");
             DoAttack();
 
-            if (Time.time - fygarLastAttackTime >= fygarAttackDuration) {//take dah chill pill mon an chess dem again
+            if (Time.time - fygarLastAttackTime >= fygarAttackDuration && doneAttacking) {//take dah chill pill mon an chess dem again
+                hasAttackedThisGoal = false;
                 CurrentGoal = Goal.Chase;
+                Debug.Log("Returning to Chase behaviour after attacking!");
                 return;
             }
 
@@ -318,6 +322,10 @@ public class EnemyBehaviour: MonoBehaviour {
 
 	}
 
+    private void StopAttacking() {//called by animator after the attack animation finishes
+        doneAttacking = true;
+    }
+
     internal void ResetBehaviour() {
         transform.position = startPosition;
         idleTime = Time.time;
@@ -326,15 +334,19 @@ public class EnemyBehaviour: MonoBehaviour {
 
     internal void Squash() {//Rocks can call this to make the enemy appear crushed
         if (!isSquashed) {
-            spriteRenderer.sprite = squashedSprite;
+            animator.SetTrigger("Squashed");
             isSquashed = true;
             Die(2f);
         }
     }
 
     private void DoAttack() {
-        fygarLastAttackTime = Time.time;
-        animator.SetTrigger("Attack");
+        if (!hasAttackedThisGoal) {
+            doneAttacking = false;
+            hasAttackedThisGoal = true;
+            fygarLastAttackTime = Time.time;
+            animator.SetTrigger("Attack");
+        }
     }
 
     private void StartGhosting(Vector2 target) {

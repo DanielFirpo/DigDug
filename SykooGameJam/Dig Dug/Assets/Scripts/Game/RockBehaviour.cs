@@ -33,12 +33,20 @@ public class RockBehaviour : MonoBehaviour {
 
     private EnemyBehaviour[] enemies;
 
+    private List<EnemyBehaviour> squashedEnemies;
+
+    [SerializeField]
+    private float gridlineOffset;
+
     // Use this for initialization
     void Start () {
+        squashedEnemies = new List<EnemyBehaviour>();
         gameManager = FindObjectOfType<GameManager>();
         enemies = FindObjectsOfType<EnemyBehaviour>();
         levelManager = FindObjectOfType<LevelManager>();
         playerController = FindObjectOfType<PlayerController>();
+        Vector2 nearestGridlines = levelManager.GetNearestGridlines(this.transform.position);
+        this.transform.position = new Vector3(nearestGridlines.x, nearestGridlines.y + gridlineOffset, transform.position.z);//lets snap to an X gridline so we can place rocks haphazardly without worring if they'll fall correctly (directly down a tunnel). Also adjust Y to be in the best spot (so player can dig under and leave to the left or right with ease)
     }
 	
 	void Update () {//TODO: Rock accelleration and fix fluctuating falling speed
@@ -53,7 +61,8 @@ public class RockBehaviour : MonoBehaviour {
                             enemy.currentlyFallingRocks.Add(this);
                         }
 
-                        if (IsBelow(enemy.transform.position, TriggerRange / 2)) {//OOF
+                        if (IsBelow(enemy.transform.position, TriggerRange / 2) && !squashedEnemies.Contains(enemy)) {//OOF
+                            squashedEnemies.Add(enemy);
                             enemy.Squash();
                             enemy.transform.parent = this.transform;
                             if (gameManager.PlayerOneTurn) {

@@ -1606,7 +1606,8 @@ MonoBehaviour:
   xGridlines: 8
   gridlineSpacing: 2.1
   gridDebug: {fileID: 1372362453084180, guid: b721c969622825f4c9f100a9de67f396, type: 2}
-  preDigParent: {fileID: 1656981430}
+  horizontalPreDigParent: {fileID: 1656981430}
+  verticalPreDigParent: {fileID: 1310121158}
   debugGridlineParent: {fileID: 999603606}
   DigMaskParent: {fileID: 88300346}
   DigMaskPrefab: {fileID: 1654861318801666, guid: ee3cb41cb6bdcfd448a74f3ec60cfb25,
@@ -1663,6 +1664,11 @@ Prefab:
     - target: {fileID: 4773383637399476, guid: d9e09742e17df704c99fe9d6bcc74571, type: 2}
       propertyPath: m_RootOrder
       value: 9
+      objectReference: {fileID: 0}
+    - target: {fileID: 114059650575061594, guid: d9e09742e17df704c99fe9d6bcc74571,
+        type: 2}
+      propertyPath: gridlineOffset
+      value: 1
       objectReference: {fileID: 0}
     m_RemovedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: d9e09742e17df704c99fe9d6bcc74571, type: 2}
@@ -2139,6 +2145,34 @@ SpriteRenderer:
   m_WasSpriteAssigned: 1
   m_MaskInteraction: 0
   m_SpriteSortPoint: 0
+--- !u!1 &1310121157
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInternal: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 1310121158}
+  m_Layer: 0
+  m_Name: VerticalPreDigs
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &1310121158
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInternal: {fileID: 0}
+  m_GameObject: {fileID: 1310121157}
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: -6.4745717, y: -8.592702, z: 2.5625}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_Children: []
+  m_Father: {fileID: 0}
+  m_RootOrder: 12
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &1314939052
 GameObject:
   m_ObjectHideFlags: 0
@@ -3206,7 +3240,7 @@ GameObject:
   m_Component:
   - component: {fileID: 1656981430}
   m_Layer: 0
-  m_Name: PreDigs
+  m_Name: HorizontalPreDigs
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -3824,6 +3858,48 @@ SpriteRenderer:
   m_WasSpriteAssigned: 1
   m_MaskInteraction: 0
   m_SpriteSortPoint: 0
+--- !u!1001 &1891838847
+Prefab:
+  m_ObjectHideFlags: 0
+  serializedVersion: 2
+  m_Modification:
+    m_TransformParent: {fileID: 0}
+    m_Modifications:
+    - target: {fileID: 4832410413196190, guid: 7abbe00634ee6eb429bbc559a77f418e, type: 2}
+      propertyPath: m_LocalPosition.x
+      value: -15.57
+      objectReference: {fileID: 0}
+    - target: {fileID: 4832410413196190, guid: 7abbe00634ee6eb429bbc559a77f418e, type: 2}
+      propertyPath: m_LocalPosition.y
+      value: -0.18
+      objectReference: {fileID: 0}
+    - target: {fileID: 4832410413196190, guid: 7abbe00634ee6eb429bbc559a77f418e, type: 2}
+      propertyPath: m_LocalPosition.z
+      value: 2
+      objectReference: {fileID: 0}
+    - target: {fileID: 4832410413196190, guid: 7abbe00634ee6eb429bbc559a77f418e, type: 2}
+      propertyPath: m_LocalRotation.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 4832410413196190, guid: 7abbe00634ee6eb429bbc559a77f418e, type: 2}
+      propertyPath: m_LocalRotation.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 4832410413196190, guid: 7abbe00634ee6eb429bbc559a77f418e, type: 2}
+      propertyPath: m_LocalRotation.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 4832410413196190, guid: 7abbe00634ee6eb429bbc559a77f418e, type: 2}
+      propertyPath: m_LocalRotation.w
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 4832410413196190, guid: 7abbe00634ee6eb429bbc559a77f418e, type: 2}
+      propertyPath: m_RootOrder
+      value: 13
+      objectReference: {fileID: 0}
+    m_RemovedComponents: []
+  m_SourcePrefab: {fileID: 100100000, guid: 7abbe00634ee6eb429bbc559a77f418e, type: 2}
+  m_IsPrefabAsset: 0
 --- !u!1 &1952757752
 GameObject:
   m_ObjectHideFlags: 0

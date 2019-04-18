@@ -61,15 +61,6 @@ public static class PlayerStats {
         set { currentLevelP1 = value; if (currentLevelP1 > HighLevel) HighLevel = currentLevelP1; }
     }
 
-    internal static void LoadRecordStats() {
-
-        HighScore = PlayerPrefs.GetInt(highScoreKey);
-        HighLevel = PlayerPrefs.GetInt(highLevelKey);
-
-        recordStatsLoaded = true;
-
-    }
-
     private static int currentScoreP2;
 
     internal static int CurrentScoreP2 {
@@ -82,6 +73,15 @@ public static class PlayerStats {
     internal static int CurrentLevelP2 {
         get { return currentLevelP2; }
         set { currentLevelP2 = value; if (currentLevelP2 > HighLevel) HighLevel = currentLevelP2; }
+    }
+
+    internal static void LoadRecordStats() {
+
+        HighScore = PlayerPrefs.GetInt(highScoreKey);
+        HighLevel = PlayerPrefs.GetInt(highLevelKey);
+
+        recordStatsLoaded = true;
+
     }
 
     internal static void ClearRecentStats() {//NOT highscores!

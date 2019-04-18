@@ -34,8 +34,6 @@ public class MenuManager : MonoBehaviour {
 
     private void Start() {
 
-        PlayerStats.LoadRecordStats();
-
         Debug.Log("High level: " + PlayerStats.HighLevel.ToString());
         highLevel.text = PlayerStats.HighLevel.ToString();
         highScore.text = PlayerStats.HighScore.ToString();

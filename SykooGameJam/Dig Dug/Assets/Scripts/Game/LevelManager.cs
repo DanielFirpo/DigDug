@@ -34,7 +34,10 @@ public class LevelManager : MonoBehaviour {
     private GameObject gridDebug;
 
     [SerializeField]
-    private Transform preDigParent;
+    private Transform horizontalPreDigParent;//snaps to an X gridline
+
+    [SerializeField]
+    private Transform verticalPreDigParent;//snaps to a Y gridline
 
     [SerializeField]
     private Transform debugGridlineParent;
@@ -63,10 +66,11 @@ public class LevelManager : MonoBehaviour {
 
     // Use this for initialization
     void Start () {
+
         dugPositions = new List<Vector2>();
         //PlaceGridDebugMarkers();
 
-        foreach (Transform preDig in preDigParent) {//Foreach child of preDigParent
+        foreach (Transform preDig in horizontalPreDigParent) {//Foreach child of preDigParent
 
             Vector2 nearestGridlines = GetNearestGridlines(preDig.position);
 
@@ -75,6 +79,17 @@ public class LevelManager : MonoBehaviour {
             Destroy(preDig.gameObject);
 
         }
+
+        foreach (Transform preDig in verticalPreDigParent) {//Foreach child of preDigParent
+
+            Vector2 nearestGridlines = GetNearestGridlines(preDig.position);
+
+            DoDigAt(new Vector2(nearestGridlines.x, preDig.position.y));
+
+            Destroy(preDig.gameObject);
+
+        }
+
     }
 	
     internal void DoDigAt(Vector2 position) {//Unsafe, could dig off grid
