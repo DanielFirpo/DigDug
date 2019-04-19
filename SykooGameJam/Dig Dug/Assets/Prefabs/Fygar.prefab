@@ -97,7 +97,7 @@ BoxCollider2D:
     adaptiveTiling: 0
   m_AutoTiling: 0
   serializedVersion: 2
-  m_Size: {x: 0.14, y: 0.14}
+  m_Size: {x: 0.1, y: 0.1}
   m_EdgeRadius: 0
 --- !u!61 &61856712633708220
 BoxCollider2D:
@@ -105,7 +105,7 @@ BoxCollider2D:
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInternal: {fileID: 100100000}
   m_GameObject: {fileID: 1607170120451654}
-  m_Enabled: 1
+  m_Enabled: 0
   m_Density: 1
   m_Material: {fileID: 0}
   m_IsTrigger: 1
@@ -156,7 +156,8 @@ MonoBehaviour:
   enemyType: 0
   travelDirection: {x: 0, y: 0}
   speed: 2.5
-  idleDuration: 5
+  randomIdleDurationRange: {x: 7, y: 20}
+  ghostSpeedMultiplier: 0.5
   fleeSpeedMultiplier: 1
   fygarAttackRange: 1.11
   fygarAttackDuration: 0.5

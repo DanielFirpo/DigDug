@@ -1,10 +1,10 @@
-﻿using System;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using UnityEngine;
 
 [RequireComponent(typeof(SpriteRenderer))]
 public class EnemyBehaviour: MonoBehaviour {
 
+    #region InstanceVars
     [SerializeField]
     private EnemyType enemyType;
 
@@ -15,7 +15,10 @@ public class EnemyBehaviour: MonoBehaviour {
     private float speed;
 
     [SerializeField]
-    private float idleDuration;
+    private Vector2 randomIdleDurationRange;
+
+    [SerializeField]
+    private float ghostSpeedMultiplier;
 
     [SerializeField]
     private float fleeSpeedMultiplier;
@@ -45,8 +48,11 @@ public class EnemyBehaviour: MonoBehaviour {
     /// </summary>
     internal enum Goal { Idle, Ghost, Chase, Attack, Flee }
 
-    private Vector3 fleePos;//Where we're currently running from
     internal Goal CurrentGoal { get; private set; } = Goal.Idle;
+
+    private enum FacingDirection { Left, Right }
+
+    private FacingDirection currentlyFacing;
 
     private enum EnemyType { Fygar, Pooka }
 
@@ -64,11 +70,13 @@ public class EnemyBehaviour: MonoBehaviour {
     }
     //how many times the player has pumped up this enemy
 
-    private readonly Vector2 up = new Vector2(0, 1000);
-    private readonly Vector2 down = new Vector2(0, -1000);
+    private readonly Vector2 upDirection = new Vector2(0, 1000);
+    private readonly Vector2 downDirection = new Vector2(0, -1000);
 
-    private readonly Vector2 left = new Vector2(1000, 0);
-    private readonly Vector2 right = new Vector2(-1000, 0);
+    private readonly Vector2 leftDirection = new Vector2(1000, 0);
+    private readonly Vector2 rightDirection = new Vector2(-1000, 0);
+
+    private Vector3 fleePos;//Where we're currently running from
 
     private Vector2 travelTarget;//The target we must reach before finding another (Easiest way to restrict movement to gridlines, shouldn't cut corners either if PlayerController digFreq. is high enough and LevelManager DisconnectedThreshold is low enough)
 
@@ -91,8 +99,6 @@ public class EnemyBehaviour: MonoBehaviour {
 
     private List<Vector2> previousTravelTargets;//We need this to prevent back tracking
 
-    private SpriteRenderer spriteRenderer;
-
     private bool isSquashed = false;
 
     internal bool isDying { get; private set; } = false;
@@ -113,9 +119,15 @@ public class EnemyBehaviour: MonoBehaviour {
 
     private Animator animator;
 
-    private bool hasAttackedThisGoal;
+    private bool attackQueued = false;
 
     private bool doneAttacking;
+
+    private float idleDuration;
+
+    private Vector2 lastPositon;//Used to determine which direction we're walking in
+
+    #endregion
 
     // Use this for initialization
     void Start () {
@@ -126,7 +138,9 @@ public class EnemyBehaviour: MonoBehaviour {
 
         idleTime = Time.time;
 
-        idleDuration += UnityEngine.Random.Range(1, 10);//make sure they all don't attack at once
+        idleDuration += UnityEngine.Random.Range(randomIdleDurationRange.x, randomIdleDurationRange.y);//make sure they all don't attack at once
+
+        Debug.Log(name + ": I'll idle for " + randomIdleDurationRange);
 
         fleeStartTime = Time.time;
 
@@ -138,19 +152,21 @@ public class EnemyBehaviour: MonoBehaviour {
         previousTravelTargets.Add(nullVector);
         previousTravelTargets.Add(nullVector);//to prevent index out of bounds errors before the list has been populated
 
-        spriteRenderer = GetComponent<SpriteRenderer>();
-
         startPosition = this.transform.position;
 
-    }//TODO: 1. Not new random, new direction with walkable positions. DONE 2. Don't let player dig already dug positions. DONE 3. Restrict enemy movement along gridlines.
+    }//TODO: 1. Not new random, new direction with walkable positions. DONE 2. Don't let player dig already dug positions. DONE 3. Restrict enemy movement along gridlines. DONE
 
-
-	// Update is called once per frame
-	void Update () {
+    #region Update
+    // Update is called once per frame
+    void Update () {
 
         if (Paused) {
             return;
         }
+
+        SetFacing();
+
+        RotateToMatchFacing();
 
         if (Time.time - timeSinceLastDeflation > deflationSpeed) {//slowly deflate
             Inflation -= 1;
@@ -206,9 +222,9 @@ public class EnemyBehaviour: MonoBehaviour {
                 if (!progressingTowardsTarget) {//If we're not already moving towards a target, lets find a new one.
 
                     if (Vector2.Distance(bestPosition, travelDirection) > lastDirectionDistance) {//We're starting to have to move farther away from our desired direction, lets travel a different direction so we don't get stuck in a loop walking farther and closer over and over
-
                         if (Time.time - idleTime > idleDuration) {//if we've been idling for more than idleDuration seconds
-                            int rand = UnityEngine.Random.Range(1, 5);//25% chance to ghost/chase upon hitting a wall
+                            Debug.Log("Since Time.time (" + Time.time + ") minus the time we started idling (" + idleTime + ") is greater than idle duration (" + randomIdleDurationRange + ") we are going to stop idling");
+                            int rand = Random.Range(1, 5);//25% chance to ghost/chase upon hitting a wall
                             if (rand == 1) {
                                 StartGhosting(new Vector2(playerController.transform.position.x, playerController.transform.position.y));
                                 fygarLastAttackTime = Time.time;
@@ -230,7 +246,7 @@ public class EnemyBehaviour: MonoBehaviour {
 
             }
             else {//somehow we got stuck (probably will never happen) lets ghost out
-                Debug.Log("No walkable positions");
+                Debug.Log("No walkable positions " + name);
                 StartGhosting(new Vector2(playerController.transform.position.x, playerController.transform.position.y));
                 return;
             }
@@ -261,6 +277,8 @@ public class EnemyBehaviour: MonoBehaviour {
                     fygarLastAttackTime = Time.time;
                     fygarAttackFrequency = UnityEngine.Random.Range(5, 15);//TODO: SerializeField constants
                     CurrentGoal = Goal.Attack;
+                    attackQueued = true;
+                    doneAttacking = true;
                 }
             }
 
@@ -283,16 +301,18 @@ public class EnemyBehaviour: MonoBehaviour {
         }
         else if (CurrentGoal == Goal.Attack) {
 
-            //Debug.Log("Attacking");
-            DoAttack();
-
-            if (Time.time - fygarLastAttackTime >= fygarAttackDuration && doneAttacking) {//take dah chill pill mon an chess dem again
-                hasAttackedThisGoal = false;
-                CurrentGoal = Goal.Chase;
-                Debug.Log("Returning to Chase behaviour after attacking!");
-                return;
+            if (doneAttacking) {
+                Debug.Log("doneAttacking: should attack:" + attackQueued);
+                if (attackQueued) {//We haven't already attacked during this goal
+                    DoAttack();
+                }
             }
 
+            if (!attackQueued && doneAttacking) {
+                Debug.Log("We're goddamn done");
+                    CurrentGoal = Goal.Chase;
+                    return;
+            }
         }
         else if (CurrentGoal == Goal.Flee) {
 
@@ -321,31 +341,56 @@ public class EnemyBehaviour: MonoBehaviour {
         }
 
 	}
+    #endregion
+
+    private void SetFacing() {
+        if (DistanceToDirection(lastPositon, leftDirection) >= DistanceToDirection(this.transform.position, leftDirection)) {
+            currentlyFacing = FacingDirection.Left;
+        }
+        else {
+            currentlyFacing = FacingDirection.Right;
+        }
+    }
+
+    private void RotateToMatchFacing() {
+        if (currentlyFacing == FacingDirection.Right) {
+            transform.rotation = Quaternion.Euler(new Vector3(0, 0, 0));
+            transform.localScale = new Vector3(-8, 8, 1);
+        }
+        else {//left
+            transform.rotation = Quaternion.Euler(new Vector3(0, 0, 0));
+            transform.localScale = new Vector3(8, 8, 1);
+        }
+    }
 
     private void StopAttacking() {//called by animator after the attack animation finishes
+        Debug.Log("Done Attacking");
         doneAttacking = true;
     }
+
+    private void DoAttack() {
+
+        Debug.Log("Our goal is to ATTACK!");
+        doneAttacking = false;
+        animator.SetTrigger("Attack");
+        attackQueued = false;
+
+    }
+
 
     internal void ResetBehaviour() {
         transform.position = startPosition;
         idleTime = Time.time;
         CurrentGoal = Goal.Idle;
+        lastDirectionDistance = 0;
+        Debug.Log("Reseting behaviour");
     }
 
-    internal void Squash() {//Rocks can call this to make the enemy appear crushed
+    internal void Squash() {//Rocks can call this to make the enemy appear crushed and kill them
         if (!isSquashed) {
             animator.SetTrigger("Squashed");
             isSquashed = true;
             Die(2f);
-        }
-    }
-
-    private void DoAttack() {
-        if (!hasAttackedThisGoal) {
-            doneAttacking = false;
-            hasAttackedThisGoal = true;
-            fygarLastAttackTime = Time.time;
-            animator.SetTrigger("Attack");
         }
     }
 
@@ -380,7 +425,7 @@ public class EnemyBehaviour: MonoBehaviour {
 
     private float DistanceToDirection(Vector2 pos, Vector2 direction) {//Gets the distance from pos to direction without knowing which direction direction is
 
-        if (direction == up || direction == down) {
+        if (direction == upDirection || direction == downDirection) {
             return Distance(pos.y, direction.y);
         }
         else {//direction is right or left
@@ -395,17 +440,17 @@ public class EnemyBehaviour: MonoBehaviour {
 
                 List<Vector2> possibleDirections = new List<Vector2>();
 
-                if (travelDirection != up && Distance(potentialPos.y, up.y) < Distance(transform.position.y, up.y)) {//if... fuck idk how to explain this
-                    possibleDirections.Add(up);
+                if (travelDirection != upDirection && Distance(potentialPos.y, upDirection.y) < Distance(transform.position.y, upDirection.y)) {//if... fuck idk how to explain this
+                    possibleDirections.Add(upDirection);
                 }
-                if (travelDirection != down && Distance(potentialPos.y, down.y) < Distance(transform.position.y, down.y)) {
-                    possibleDirections.Add(down);
+                if (travelDirection != downDirection && Distance(potentialPos.y, downDirection.y) < Distance(transform.position.y, downDirection.y)) {
+                    possibleDirections.Add(downDirection);
                 }
-                if (travelDirection != left && Distance(potentialPos.x, left.x) < Distance(transform.position.x, left.x)) {
-                    possibleDirections.Add(left);
+                if (travelDirection != leftDirection && Distance(potentialPos.x, leftDirection.x) < Distance(transform.position.x, leftDirection.x)) {
+                    possibleDirections.Add(leftDirection);
                 }
-                if (travelDirection != right && Distance(potentialPos.x, right.x) < Distance(transform.position.x, right.x)) {
-                    possibleDirections.Add(right);
+                if (travelDirection != rightDirection && Distance(potentialPos.x, rightDirection.x) < Distance(transform.position.x, rightDirection.x)) {
+                    possibleDirections.Add(rightDirection);
                 }
 
                 int randIndex = UnityEngine.Random.Range(0, possibleDirections.Count);
@@ -416,7 +461,7 @@ public class EnemyBehaviour: MonoBehaviour {
             }
         }
         Debug.LogError("Could not find a walkable direction. This should never happen, so something went wrong. Defaulting to UP");
-        return up;
+        return upDirection;
     }
 
     private Vector2 FindNewFleeTarget() {//find any direction that has walkable positions
@@ -467,7 +512,12 @@ public class EnemyBehaviour: MonoBehaviour {
 
     private void MoveTowardsTarget() {
 
-        if (CurrentGoal == Goal.Flee) {
+        lastPositon = transform.position;
+
+        if (CurrentGoal == Goal.Ghost) {
+            this.transform.position = Vector3.MoveTowards(transform.position, new Vector3(TravelTarget.x, TravelTarget.y, transform.position.z), speed * ghostSpeedMultiplier * Time.deltaTime);
+        }
+        else if (CurrentGoal == Goal.Flee) {
             this.transform.position = Vector3.MoveTowards(transform.position, new Vector3(TravelTarget.x, TravelTarget.y, transform.position.z), speed * fleeSpeedMultiplier * Time.deltaTime);
         }
         else {
@@ -511,16 +561,16 @@ public class EnemyBehaviour: MonoBehaviour {
     }
 
     private void PrintDirection(Vector2 dir) {
-        if (dir == up) {
+        if (dir == upDirection) {
             Debug.Log("<color=green>UP</color>");
         }
-        if (dir == down) {
+        if (dir == downDirection) {
             Debug.Log("<color=green>DOWN</color>");
         }
-        if (dir == left) {
+        if (dir == leftDirection) {
             Debug.Log("<color=green>LEFT</color>");
         }
-        if (dir == right) {
+        if (dir == rightDirection) {
             Debug.Log("<color=green>RIGHT</color>");
         }
     }

@@ -3,8 +3,8 @@ using UnityEngine;
 
 public static class PlayerStats {
 
-    private static readonly string highScoreKey = "high_score";
-    private static readonly string highLevelKey = "high_level";
+    private static readonly string highScoreKey = "highscore";
+    private static readonly string highLevelKey = "highlevel";
 
     private static bool recordStatsLoaded;
 

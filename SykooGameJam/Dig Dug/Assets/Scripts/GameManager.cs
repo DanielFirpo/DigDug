@@ -299,7 +299,7 @@ public class GameManager : MonoBehaviour {//For handling play sessions
         levelCount++;
         sceneCounter++;
 
-        if (sceneCounter > 12) {//If we're on the last level
+        if (sceneCounter > 16) {//If we're on the last level
             sceneCounter = 8;//Loop back around to the 8th
         }
 
@@ -321,6 +321,12 @@ public class GameManager : MonoBehaviour {//For handling play sessions
         SetReadyDialog(false);
         SetPaused(false);
         currentDialogInProgress = null;
+    }
+
+    private void ReverseWinDialog() {
+        SetPaused(false);
+        currentDialogInProgress = null;
+        NextLevel();
     }
 
     private void GameOver() {//Do game over stuff before ending game
@@ -367,6 +373,24 @@ public class GameManager : MonoBehaviour {//For handling play sessions
 
     }
 
+    private int EnemiesStillAlive() {
+        int enemies = 0;
+        foreach (EnemyBehaviour enemy in FindObjectsOfType<EnemyBehaviour>()) {
+            if (!enemy.isDying) {
+                enemies++;
+            }
+        }
+        return enemies;
+    }
+
+    internal void OnEnemyDeath() {
+        if (EnemiesStillAlive() <= 0) {
+            currentDialogInProgress = new WinDialog(4f, this);
+            WinDialog dialog = currentDialogInProgress as WinDialog;
+            dialog.DoDialog();
+        }
+    }
+
     private class ReadyDialog {
 
         private float displayDuration;
@@ -385,6 +409,23 @@ public class GameManager : MonoBehaviour {//For handling play sessions
 
     }
 
+    private class WinDialog {
+
+        private float displayDuration;
+        private GameManager gameManager;
+
+        public WinDialog(float displayDuration, GameManager gameManager) {
+            this.displayDuration = displayDuration;
+            this.gameManager = gameManager;
+        }
+
+        internal void DoDialog() {
+            gameManager.SetPaused(true);
+            gameManager.Invoke(nameof(ReverseWinDialog), displayDuration);
+        }
+
+    }
+
     private class GameOverDialog {
 
         private float displayDuration;
@@ -399,23 +440,6 @@ public class GameManager : MonoBehaviour {//For handling play sessions
             gameManager.SetPaused(true);
             gameManager.SetGameOverDialog(true);
             gameManager.Invoke(nameof(ReverseGameOverDialog), displayDuration);
-        }
-    }
-
-    private int EnemiesStillAlive() {
-        int enemies = 0;
-        foreach (EnemyBehaviour enemy in FindObjectsOfType<EnemyBehaviour>()) {
-            if (!enemy.isDying) {
-                enemies++;
-            }
-        }
-        return enemies;
-    }
-
-    internal void OnEnemyDeath() {
-        if (EnemiesStillAlive() <= 0) {
-            NextLevel();
-            Debug.Log("YOU WIN!");
         }
     }
 }
