@@ -179,6 +179,9 @@ public class PlayerController: MonoBehaviour {
     private void OnTriggerStay2D(Collider2D collision) {//OnTriggerStay instead of OnTriggerEnter cause enemies can ghost into player's collider and then as they stay they won't kill the player despite touching them
         if (collision.CompareTag("Enemy")) {
             EnemyBehaviour attacker = collision.GetComponent<EnemyBehaviour>();
+            if (attacker == null) {//Fygar's fire breath child hit us, lets get the parent's (Fygar's) EnemyBehaviour instead
+                attacker = collision.transform.parent.GetComponent<EnemyBehaviour>();
+            }
             if (attacker.CurrentGoal != EnemyBehaviour.Goal.Ghost && attacker.Inflation <= 0) {
                 StartDeath();
             }

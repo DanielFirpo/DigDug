@@ -119,6 +119,9 @@ public class Weapon : MonoBehaviour {
         if (other.CompareTag("Enemy")) {
             if (target == null) {
                 target = other.GetComponent<EnemyBehaviour>();
+                if (target == null) {
+                    target = other.transform.parent.GetComponent<EnemyBehaviour>();
+                }
                 target.Inflation += 1;
                 hitRenderer.sprite = weaponVisuals.sprite;
                 hitRenderer.transform.position = weaponVisuals.transform.position;//Mimic the attack animation except in a frozen state

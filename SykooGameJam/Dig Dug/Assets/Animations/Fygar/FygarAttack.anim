@@ -506,7 +506,7 @@ AnimationClip:
   m_HasMotionFloatCurves: 0
   m_GenerateMotionCurves: 0
   m_Events:
-  - time: 2.2
+  - time: 2.0666666
     functionName: StopAttacking
     data: 
     objectReferenceParameter: {fileID: 0}

@@ -6,7 +6,7 @@ public static class PlayerStats {
     private static readonly string highScoreKey = "highscore";
     private static readonly string highLevelKey = "highlevel";
 
-    private static bool recordStatsLoaded;
+    private static bool recordStatsLoaded = false;
 
     internal static readonly int PointsPerDig = 1;
     internal static readonly int PointsPerKill = 500;
@@ -43,6 +43,7 @@ public static class PlayerStats {
         }
         private set {
             highLevel = value;
+            Debug.Log("Our new high level is " + value);
             PlayerPrefs.SetInt(highLevelKey, value);
         }
     }
@@ -54,11 +55,11 @@ public static class PlayerStats {
         set { currentScoreP1 = value; if (currentScoreP1 > HighScore) HighScore = currentScoreP1; }
     }
 
-    private static int currentLevelP1;
+    private static int currentLevel;
 
-    internal static int CurrentLevelP1 {
-        get { return currentLevelP1; }
-        set { currentLevelP1 = value; if (currentLevelP1 > HighLevel) HighLevel = currentLevelP1; }
+    internal static int CurrentLevel {
+        get { return currentLevel; }
+        set { currentLevel = value; if (currentLevel > HighLevel) HighLevel = currentLevel; }
     }
 
     private static int currentScoreP2;
@@ -66,13 +67,6 @@ public static class PlayerStats {
     internal static int CurrentScoreP2 {
         get { return currentScoreP2; }
         set { currentScoreP2 = value; if (currentScoreP2 > HighScore) HighScore = currentScoreP2; }
-    }
-
-    private static int currentLevelP2;
-
-    internal static int CurrentLevelP2 {
-        get { return currentLevelP2; }
-        set { currentLevelP2 = value; if (currentLevelP2 > HighLevel) HighLevel = currentLevelP2; }
     }
 
     internal static void LoadRecordStats() {
@@ -86,8 +80,7 @@ public static class PlayerStats {
 
     internal static void ClearRecentStats() {//NOT highscores!
 
-        CurrentLevelP1 = 0;
-        CurrentLevelP2 = 0;
+        CurrentLevel = 0;
 
         CurrentScoreP1 = 0;
         CurrentScoreP2 = 0;

@@ -2,7 +2,7 @@
 using UnityEngine;
 
 [RequireComponent(typeof(SpriteRenderer))]
-public class EnemyBehaviour: MonoBehaviour {
+    public class EnemyBehaviour: MonoBehaviour {
 
     #region InstanceVars
     [SerializeField]
@@ -353,13 +353,15 @@ public class EnemyBehaviour: MonoBehaviour {
     }
 
     private void RotateToMatchFacing() {
-        if (currentlyFacing == FacingDirection.Right) {
-            transform.rotation = Quaternion.Euler(new Vector3(0, 0, 0));
-            transform.localScale = new Vector3(-8, 8, 1);
-        }
-        else {//left
-            transform.rotation = Quaternion.Euler(new Vector3(0, 0, 0));
-            transform.localScale = new Vector3(8, 8, 1);
+        if (!isSquashed) {
+            if (currentlyFacing == FacingDirection.Right) {
+                transform.rotation = Quaternion.Euler(new Vector3(0, 0, 0));
+                transform.localScale = new Vector3(-8, 8, 1);
+            }
+            else {//left
+                transform.rotation = Quaternion.Euler(new Vector3(0, 0, 0));
+                transform.localScale = new Vector3(8, 8, 1);
+            }
         }
     }
 

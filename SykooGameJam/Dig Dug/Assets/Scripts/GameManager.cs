@@ -67,8 +67,8 @@ public class GameManager : MonoBehaviour {//For handling play sessions
         get { return levelCount; }
         set {
             levelCount = value;
-            if (playerOneLives >= 1) PlayerStats.CurrentLevelP1 = value;//if player one is still alive, update their stats
-            if (playerTwoLives >= 1) PlayerStats.CurrentLevelP2 = value;
+            PlayerStats.CurrentLevel = value;
+            Debug.Log("level count setter setting PlayerStats.CurrentLevel t0 " + value);
         }
     }
 
@@ -253,15 +253,13 @@ public class GameManager : MonoBehaviour {//For handling play sessions
         }
         else {
 
-            if (PlayerOneTurn) {
+            if (PlayerOneTurn) {//switch turns
                 if (playerTwoLives >= 1) {
-                    PlayerStats.CurrentLevelP2 = levelCount;
                     PlayerOneTurn = false;
                 }
             }
             else {
                 if (playerOneLives >= 1) {
-                    PlayerStats.CurrentLevelP1 = levelCount;
                     PlayerOneTurn = true;
                 }
             }
@@ -296,7 +294,7 @@ public class GameManager : MonoBehaviour {//For handling play sessions
 
     private void NextLevel() {
 
-        levelCount++;
+        LevelCount++;
         sceneCounter++;
 
         if (sceneCounter > 16) {//If we're on the last level
@@ -304,6 +302,10 @@ public class GameManager : MonoBehaviour {//For handling play sessions
         }
 
         SceneManager.LoadScene(sceneCounter);
+
+        if (!HasGameEnded) {
+            dialogQueue.Enqueue(new ReadyDialog(3f, this));
+        }
 
     }
 
@@ -338,9 +340,13 @@ public class GameManager : MonoBehaviour {//For handling play sessions
         SetPaused(false);
         gameInProgress = false;
         sceneCounter = 0;
+        levelCount = 0;
         SceneManager.LoadScene(sceneCounter);//menu
         playerOneLives = 3;
         playerTwoLives = 3;
+        sidebarPlayerTwoScore.text = "0";
+        sidebarPlayerOneScore.text = "0";
+        sidebarLevelNumber.text = "0";
 
     }
 
